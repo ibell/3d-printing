@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+._*
+
+# OpenSCAD
+*.bak
+*.scad~
+.*.scad.swp
+
+# Slicer / print outputs (keep STLs; ignore machine-specific gcode & projects)
+*.gcode
+*.3mf
+*.gcode.3mf
+
+# Scratch
+scratchpad/
+*.tmp
