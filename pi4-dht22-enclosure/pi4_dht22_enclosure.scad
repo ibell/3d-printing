@@ -93,8 +93,43 @@ else if (part == "fit_coupon")   fit_coupon();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
+module sensor_pocket() {
+    cav_x = sensor_pcb_w + sensor_slot_fit;   // width
+    cav_y = sensor_pcb_t + sensor_slot_fit;   // thickness (into +Y face)
+    cav_z = sensor_pcb_h + sensor_slot_fit;   // drop-in depth
+    out_x = cav_x + 2 * pocket_wall;
+    out_y = cav_y + 2 * pocket_wall;
+    out_z = cav_z + pocket_wall;              // floor only; mouth open at top
+
+    assert(pocket_wall > 0, "pocket_wall must be positive");
+    assert(sensor_grille_w <= cav_x, "grille wider than cavity");
+    assert(sensor_grille_h <= cav_z, "grille taller than cavity");
+
+    difference() {
+        // outer block
+        cube([out_x, out_y, out_z]);
+        // cavity (open top = mouth for drop-in)
+        translate([pocket_wall, pocket_wall, pocket_wall])
+            cube([cav_x, cav_y, cav_z + 0.1]);
+        // grille window in +Y face
+        translate([(out_x - sensor_grille_w) / 2, out_y - pocket_wall - 0.1,
+                   pocket_wall + (cav_z - sensor_grille_h) / 2])
+            cube([sensor_grille_w, pocket_wall + 0.2, sensor_grille_h]);
+        // cable hole in -Y face
+        translate([(out_x - cable_hole_w) / 2, -0.1,
+                   pocket_wall + (cav_z - cable_hole_h) / 2])
+            cube([cable_hole_w, pocket_wall + 0.2, cable_hole_h]);
+    }
+    // two retention lips at the mouth (chamfered so they print without support)
+    for (sx = [pocket_wall + 2, out_x - pocket_wall - 2 - lip_proud * 2])
+        translate([sx, pocket_wall, out_z])
+            rotate([0, -45, 0])
+                cube([lip_proud * 1.414, cav_y, lip_proud * 1.414]);
+}
+
+module sensor_gauge() { sensor_pocket(); }
+
 /* modules added in later tasks */
-module sensor_gauge() {}
 module arm()          {}
 module tray()         {}
 module lid()          {}
