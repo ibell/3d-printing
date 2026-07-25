@@ -47,14 +47,18 @@ parameter with a measured default:
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `sensor_pcb_w` | 22.0 mm | module board width |
-| `sensor_pcb_h` | 15.0 mm | insertion depth captured by the pocket |
-| `sensor_pcb_t` | 1.6 mm | board thickness |
-| `sensor_slot_fit` | 0.2 mm | added to the slot so the board slides in |
+| `sensor_pcb_w` | 37.0 mm | module width (cavity width) |
+| `sensor_pcb_h` | 10.0 mm | module height / drop-in depth of the cavity |
+| `sensor_pcb_t` | 10.0 mm | module thickness (cavity depth into the arm face) |
+| `sensor_slot_fit` | 0.2 mm | added on each cavity dimension so the module drops in |
 | `sensor_grille_w/h` | sized to clear the white sensor body | front opening for airflow |
 
-Measure your module with calipers and set `sensor_pcb_w/h/t`; nothing else needs to
-change.
+**The pocket is a drop-in cavity, not an edge slot.** At 10 mm thick the module is a
+chunky strip, so the pocket is a rectangular box of `sensor_pcb_w × sensor_pcb_h ×
+sensor_pcb_t` (plus `sensor_slot_fit`) that the whole module drops into — grille facing
+out through the front `sensor_grille` opening, cable exiting the back into the arm
+groove. A pair of small retention lips at the mouth hold it seated. Measure your module
+with calipers and set `sensor_pcb_w/h/t`; nothing else needs to change.
 
 ## 3. Architecture — three parts
 
@@ -150,15 +154,17 @@ closed by 4 × M3 screws into the tray corner bosses.
 ## 6. Test parts (fit-check ladder)
 
 Cheap prints that each rule out one failure before committing to the ~full set. Selected
-via `part=`.
+via `part=`. **Ordered by uncertainty: the sensor pocket goes first**, because its
+dimensions were just measured off the actual module and are the values most likely to
+need a tweak — cheapest thing to get wrong, so prove it first.
 
-1. **`fit_coupon`** — a small tile carrying **one corner of the standoff pattern plus one
-   adjacent port-channel edge**. Verifies the two things that actually have to be right:
-   the M2.5 pilot fit and hole-to-edge spacing, and that a real Pi's port stack clears
-   the open channel. A few grams, prints in minutes.
-2. **`sensor_gauge`** — just the arm's pocket, to check the DHT22 module snaps in with a
-   firm grip after you have set `sensor_pcb_*`. This is the parameter most likely to need
-   a tweak for a given module.
+1. **`sensor_gauge`** — just the arm's pocket (the "breakout box"), to check the DHT22
+   module seats with a firm grip after you have set `sensor_pcb_*`. Print this **before
+   anything else**; it validates the freshest, least-certain interface for a few grams.
+2. **`fit_coupon`** — a small tile carrying **one corner of the standoff pattern plus one
+   adjacent port-channel edge**. Verifies the two Pi-side things that actually have to be
+   right: the M2.5 pilot fit and hole-to-edge spacing, and that a real Pi's port stack
+   clears the open channel.
 3. Then the production `tray`, `lid`, and `arm`.
 
 ## 7. Printing
