@@ -281,5 +281,14 @@ module tray() {
 
 /* modules added in later tasks */
 module lid()          {}
-module fit_coupon()   {}
+module fit_coupon() {
+    cx = 32; cy = 28;
+    union() {
+        cube([cx, cy, floor]);                                  // tile
+        cube([wall, cy, floor + tray_wall_h]);                  // one walled edge (SD/GPIO-like)
+        translate([wall + hole_edge, hole_edge, floor]) standoff();   // one standoff corner
+        // stub of the open-channel edge: a 2 mm-tall lip only, so a port stack clears above it
+        translate([0, cy - wall, 0]) cube([cx, wall, floor + 2]);
+    }
+}
 module assembly()     {}
