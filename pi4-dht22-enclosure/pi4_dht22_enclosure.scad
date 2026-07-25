@@ -284,7 +284,7 @@ module tray() {
         tray_socket();
 }
 
-module lid() {
+module lid_assembled() {
     // ---- derived geometry (ASSEMBLED coords, z up from tray floor bottom) ----
     board_top = floor + standoff_h + pcb_t;          // 8.4  board top surface
     out_x     = board_w + 2 * board_fit + wall;       // 87.8 tray outer (x-min wall @ x=0)
@@ -319,9 +319,6 @@ module lid() {
 
     assert(gz0 < snap_ridge_z && snap_ridge_z < gz1, "groove must straddle ridge centre");
 
-    // Authored in assembled coords, then flipped closed-top-down onto the bed
-    // (rotate 180 about X, translate so min z = 0, skirts pointing up).
-    translate([0, py1, top_z1]) rotate([180, 0, 0])
     difference() {
         union() {
             // top plate
@@ -362,6 +359,37 @@ module lid() {
             cube([led_win_w, led_win_h, (top_z1 - top_z0) + 2 * eps]);
     }
 }
+
+module lid() {
+    // Print orientation only: flip the assembled-coords lid closed-top-down
+    // onto the bed (rotate 180 about X, translate so min z = 0, skirts
+    // pointing up) so it prints support-free. Geometry itself lives in
+    // lid_assembled(); this wrapper just recomputes the two placement values
+    // (py1, top_z1) needed for the flip transform.
+    board_top = floor + standoff_h + pcb_t;
+    out_y     = board_l + 2 * board_fit + wall;
+    top_z0    = board_top + lid_clear;
+    top_z1    = top_z0 + lid_wall;
+    py1       = out_y + snap_ridge_h + lid_fit + lid_wall;
+
+    translate([0, py1, top_z1]) rotate([180, 0, 0])
+        lid_assembled();
+}
+
+module pi_ghost() {
+    // Visual-only stand-in for the Pi 4 board: 85x56x1.4 slab with the four
+    // Ø2.7 mount holes on the 58x49 pattern, same corner scheme as
+    // standoff_field() (hole_edge inset from each edge).
+    pi_hole_d = 2.7;
+    difference() {
+        cube([board_w, board_l, pcb_t]);
+        for (x = [hole_edge, hole_edge + hole_dx])
+            for (y = [hole_edge, hole_edge + hole_dy])
+                translate([x, y, -0.1])
+                    cylinder(h = pcb_t + 0.2, d = pi_hole_d);
+    }
+}
+
 module fit_coupon() {
     cx = 32; cy = 28;
     union() {
@@ -372,4 +400,32 @@ module fit_coupon() {
         translate([0, cy - wall, 0]) cube([cx, wall, floor + 2]);
     }
 }
-module assembly()     {}
+module assembly() {
+    // Visual-only view (not printed): tray + Pi ghost + snap-fit lid + plugged
+    // sensor arm, all in ASSEMBLED coords (tray at origin, z up from floor).
+    out_x = board_w + 2 * board_fit + wall;   // 87.8 tray outer, x-min wall @ x=0
+    out_y = board_l + 2 * board_fit + wall;   // 58.8 tray outer, +Y wall face
+
+    // Lid is lifted a small, purely-cosmetic amount so the snap grooves/ridges
+    // are visible in the render instead of being hidden flush against the
+    // tray wall. This is a visual explode ONLY -- the lid's true seated
+    // position (no offset) is what lid_assembled() returns.
+    lid_explode = 8;
+
+    tray();
+
+    // Pi board ghost, seated on the standoffs (board bottom at z = floor+standoff_h)
+    % translate([wall + board_fit, board_fit, floor + standoff_h])
+        pi_ghost();
+
+    // Lid, in its true assembled position, lifted by lid_explode for visibility.
+    translate([0, 0, lid_explode])
+        lid_assembled();
+
+    // Sensor arm plugged into the +Y (GPIO) socket: tenon nested in the bore
+    // (centred on the socket, x = out_x/2, y = out_y, z = floor+wall), arm
+    // body + sensor pocket extending further +Y, away from the tray.
+    translate([out_x / 2, out_y, floor + wall])
+        rotate([0, 0, 90])
+            arm();
+}
