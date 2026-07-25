@@ -19,21 +19,24 @@ floor       = 2.0;
 board_fit   = 0.4;
 tray_wall_h = 10.0;    // tray wall height above floor
 snap_ridge_h = 0.8;   // how far the ridge protrudes out from the wall
-snap_ridge_w = 20.0;  // ridge length along the wall
 snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
 lid_clear   = 20.0;    // internal clear height above board top
 lid_wall    = 2.0;
 lid_lip     = 4.0;     // lip overlap depth
 lid_fit     = 0.3;     // lid-over-tray clearance
 
+/* ---------- snap-fit ridge/groove segments (shared by tray + lid) ----------
+   Each wall carries TWO ridge segments that FLANK its obstruction; the lid's
+   grooves reuse the same lists so the mate is guaranteed. Entries are
+   [start, length] along the wall.
+   x-min (SD) wall: y-segments flank the SD notch (y[22.4,36.4]).
+   +Y  (GPIO) wall: x-segments flank the arm socket (x[36.7,51.1]) & cable slot. */
+snap_seg_x = [[4, 16], [39, 16]];   // x-min wall, along y -> y[4,20] & y[39,55]
+snap_seg_y = [[6, 24], [56, 24]];   // +Y  wall, along x -> x[6,30] & x[56,80]
+
 /* ---------- standoffs ---------- */
 standoff_h  = 5.0;
 standoff_od = 6.0;
-
-/* ---------- lid fixing (M3) ---------- */
-lid_screw_d = 3.2;     // clearance hole in lid
-boss_d      = 7.0;     // tray corner boss OD
-boss_pilot  = 2.5;     // M3 self-tap pilot in boss
 
 /* ---------- ventilation ---------- */
 vent_slot_w   = 3.0;
@@ -236,24 +239,26 @@ module tray() {
             cube([wall, out_y, floor + tray_wall_h]);
             // +Y wall (GPIO long edge)
             translate([0, in_y, 0]) cube([out_x, wall, floor + tray_wall_h]);
-            // snap ridge on the outer (x=0, facing -X) face of the x-min wall
-            hull() {
-                translate([-0.01, out_y / 2 - snap_ridge_w / 2,
-                           snap_ridge_z - ridge_base_half])
-                    cube([ridge_slab, snap_ridge_w, 2 * ridge_base_half]);
-                translate([-snap_ridge_h, out_y / 2 - snap_ridge_w / 2,
-                           snap_ridge_z - ridge_tip_half])
-                    cube([ridge_slab, snap_ridge_w, 2 * ridge_tip_half]);
-            }
-            // snap ridge on the outer (y=out_y, facing +Y) face of the +Y wall
-            hull() {
-                translate([out_x / 2 - snap_ridge_w / 2, out_y - ridge_slab + 0.01,
-                           snap_ridge_z - ridge_base_half])
-                    cube([snap_ridge_w, ridge_slab, 2 * ridge_base_half]);
-                translate([out_x / 2 - snap_ridge_w / 2, out_y + snap_ridge_h - ridge_slab,
-                           snap_ridge_z - ridge_tip_half])
-                    cube([snap_ridge_w, ridge_slab, 2 * ridge_tip_half]);
-            }
+            // snap ridges on the outer (x=0, facing -X) face of the x-min wall.
+            // TWO segments flanking the SD notch (snap_seg_x = [y0,len] along y).
+            for (seg = snap_seg_x)
+                hull() {
+                    translate([-0.01, seg[0], snap_ridge_z - ridge_base_half])
+                        cube([ridge_slab, seg[1], 2 * ridge_base_half]);
+                    translate([-snap_ridge_h, seg[0], snap_ridge_z - ridge_tip_half])
+                        cube([ridge_slab, seg[1], 2 * ridge_tip_half]);
+                }
+            // snap ridges on the outer (y=out_y, facing +Y) face of the +Y wall.
+            // TWO segments flanking the arm socket (snap_seg_y = [x0,len] along x).
+            for (seg = snap_seg_y)
+                hull() {
+                    translate([seg[0], out_y - ridge_slab + 0.01,
+                               snap_ridge_z - ridge_base_half])
+                        cube([seg[1], ridge_slab, 2 * ridge_base_half]);
+                    translate([seg[0], out_y + snap_ridge_h - ridge_slab,
+                               snap_ridge_z - ridge_tip_half])
+                        cube([seg[1], ridge_slab, 2 * ridge_tip_half]);
+                }
         }
         // SD notch in the x-min wall. Cut reaches past x=0 by snap_ridge_h+0.1
         // (not just the wall face) so it also punches cleanly through the new
@@ -279,8 +284,84 @@ module tray() {
         tray_socket();
 }
 
-/* modules added in later tasks */
-module lid()          {}
+module lid() {
+    // ---- derived geometry (ASSEMBLED coords, z up from tray floor bottom) ----
+    board_top = floor + standoff_h + pcb_t;          // 8.4  board top surface
+    out_x     = board_w + 2 * board_fit + wall;       // 87.8 tray outer (x-min wall @ x=0)
+    out_y     = board_l + 2 * board_fit + wall;       // 58.8 tray outer (+Y wall face)
+    top_z0    = board_top + lid_clear;                // 28.4 top-plate underside
+    top_z1    = top_z0 + lid_wall;                    // 30.4 top-plate top
+    skirt_z0  = 5.0;                                  // skirt bottom (below the z=9 ridge)
+
+    // top-plate footprint. x-min & +Y edges align with the skirt outers; the
+    // -Y (AV) and x-max (Ethernet) edges only overhang the tray by lid_fit and
+    // carry NO skirt -> those two sides are open port channels.
+    px0 = -(snap_ridge_h + lid_fit) - lid_wall;       // -3.1 x-min skirt outer
+    px1 = out_x + lid_fit;                            //  88.1 x-max open overhang
+    py0 = -lid_fit;                                   //  -0.3 -Y open overhang
+    py1 = out_y + snap_ridge_h + lid_fit + lid_wall;  //  61.9 +Y skirt outer
+
+    // Skirt engagement. The LIP face rides the tray wall with lid_fit clearance
+    // and INTERFERES with the ridge tip (which protrudes snap_ridge_h outward),
+    // so the skirt flexes out over the ridge on the way down. The GROOVE is a
+    // pocket at the ridge z-band; when it aligns the skirt springs back and the
+    // solid lip above/below the groove hooks the ridge -> snap retention.
+    // (The tray ridge only reaches x=-snap_ridge_h=-0.8, so a lip parked at the
+    // spec's -1.1 could never touch it; the lip is placed at -lid_fit to engage,
+    // and -1.1 / 59.9 are kept as the groove FLOORS.)
+    xlip   = -lid_fit;                                // -0.3 x-min lip face
+    xfloor = -(snap_ridge_h + lid_fit);              // -1.1 x-min groove floor
+    ylip   = out_y + lid_fit;                         // 59.1 +Y lip face
+    yfloor = out_y + snap_ridge_h + lid_fit;         // 59.9 +Y groove floor
+    gz0 = snap_ridge_z - 1.0;                         //  8.0 groove z-bottom (mates ridge z=9)
+    gz1 = snap_ridge_z + 1.0;                         // 10.0 groove z-top
+    eps = 0.01;
+
+    assert(gz0 < snap_ridge_z && snap_ridge_z < gz1, "groove must straddle ridge centre");
+
+    // Authored in assembled coords, then flipped closed-top-down onto the bed
+    // (rotate 180 about X, translate so min z = 0, skirts pointing up).
+    translate([0, py1, top_z1]) rotate([180, 0, 0])
+    difference() {
+        union() {
+            // top plate
+            translate([px0, py0, top_z0])
+                cube([px1 - px0, py1 - py0, top_z1 - top_z0]);
+
+            // x-min skirt (SD side), grooved over the ridge segments (snap_seg_x).
+            // Skirt top runs up to top_z1 so it overlaps the plate volume (a
+            // merged union -> single body; a coplanar touch at top_z0 would not).
+            difference() {
+                translate([px0, py0, skirt_z0])
+                    cube([xlip - px0, py1 - py0, top_z1 - skirt_z0]);
+                for (seg = snap_seg_x)                      // groove breaks past lip face (+eps)
+                    translate([xfloor, seg[0], gz0])
+                        cube([xlip - xfloor + eps, seg[1], gz1 - gz0]);
+            }
+
+            // +Y skirt (GPIO side): grooved over snap_seg_y, and cut fully open
+            // over the arm socket (x[32,56], protrudes to y=70.8). That gap sits
+            // between the two ridge segments, so it removes no groove.
+            difference() {
+                translate([px0, ylip, skirt_z0])
+                    cube([px1 - px0, py1 - ylip, top_z1 - skirt_z0]);
+                for (seg = snap_seg_y)                      // groove breaks past lip face (-eps)
+                    translate([seg[0], ylip - eps, gz0])
+                        cube([seg[1], yfloor - ylip + eps, gz1 - gz0]);
+                translate([32, ylip - eps, skirt_z0 - eps])       // socket/cable gap
+                    cube([56 - 32, (py1 - ylip) + 2 * eps, (top_z0 - skirt_z0) + eps]);
+            }
+        }
+        // top vent grid: bridge-printable slots through the plate
+        for (i = [-3 : 3])
+            translate([(px0 + px1) / 2 + i * (vent_slot_w + vent_gap) - vent_slot_w / 2,
+                       (py0 + py1) / 2 - vent_slot_len / 2, top_z0 - eps])
+                cube([vent_slot_w, vent_slot_len, (top_z1 - top_z0) + 2 * eps]);
+        // LED window through the plate, near the USB-C corner (-Y / x-min)
+        translate([8 - led_win_w / 2, 4 - led_win_h / 2, top_z0 - eps])
+            cube([led_win_w, led_win_h, (top_z1 - top_z0) + 2 * eps]);
+    }
+}
 module fit_coupon() {
     cx = 32; cy = 28;
     union() {
