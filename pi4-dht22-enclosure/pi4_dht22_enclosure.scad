@@ -120,11 +120,33 @@ module sensor_pocket() {
                    pocket_wall + (cav_z - cable_hole_h) / 2])
             cube([cable_hole_w, pocket_wall + 0.2, cable_hole_h]);
     }
-    // two retention lips at the mouth (chamfered so they print without support)
-    for (sx = [pocket_wall + 2, out_x - pocket_wall - 2 - lip_proud * 2])
-        translate([sx, pocket_wall, out_z])
-            rotate([0, -45, 0])
-                cube([lip_proud * 1.414, cav_y, lip_proud * 1.414]);
+    // two retention lips, rooted in the X-end walls (x in [0,pocket_wall] and
+    // x in [out_x-pocket_wall,out_x]). Each lip is the convex hull of a "back"
+    // sliver flush against the wall's inner face (a full shared face with the
+    // solid wall, from z=out_z-lip_proud to z=out_z) and a "tip" sliver
+    // protruding inward by lip_proud right at the mouth (z=out_z). The hull
+    // between them gives a ~45 deg chamfered underside, so the lip overhangs
+    // the cavity mouth (catching the top edge of the dropped-in module)
+    // without needing print support. Neither sliver rises above out_z, so the
+    // block's overall height is unchanged.
+    lip_len = cav_y * 0.6;                       // span along Y, centred in cavity
+    lip_y0  = pocket_wall + (cav_y - lip_len) / 2;
+    lip_eps = 0.01;                               // sliver thickness, for hull()
+
+    // left lip, on the x=0..pocket_wall wall, overhanging in +x
+    hull() {
+        translate([pocket_wall, lip_y0, out_z - lip_proud])
+            cube([lip_eps, lip_len, lip_proud]);
+        translate([pocket_wall + lip_proud - lip_eps, lip_y0, out_z - lip_eps])
+            cube([lip_eps, lip_len, lip_eps]);
+    }
+    // right lip, on the out_x-pocket_wall..out_x wall, overhanging in -x
+    hull() {
+        translate([out_x - pocket_wall - lip_eps, lip_y0, out_z - lip_proud])
+            cube([lip_eps, lip_len, lip_proud]);
+        translate([out_x - pocket_wall - lip_proud, lip_y0, out_z - lip_eps])
+            cube([lip_eps, lip_len, lip_eps]);
+    }
 }
 
 module sensor_gauge() { sensor_pocket(); }
