@@ -11,7 +11,8 @@ decisions and the reasoning behind them.
 A three-part 3D-printed desk enclosure for a Raspberry Pi 4 Model B running as a
 temperature-monitoring node, plus a plug-in arm that holds a DHT22 temperature/humidity
 module out in free air, away from the Pi's own heat. All three parts print flat with no
-supports and assemble by hand with four M2.5 and four M3 screws.
+supports and assemble by hand with four M2.5 screws (Pi to standoffs), one M3 set screw
+(arm in socket), and a snap-fit lid.
 
 The reason the sensor is on an arm at all is thermal: a DHT22 sitting on or inside a
 warm enclosure reads the box, not the room. The arm exists to move the sensor out of
@@ -64,8 +65,8 @@ with calipers and set `sensor_pcb_w/h/t`; nothing else needs to change.
 
 | Part | Role |
 |---|---|
-| **Base tray** | Holds the Pi on four printed standoffs. Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid screw bosses, and the keyed arm socket. |
-| **Lid** | Vented top with the LED window and open port channels. Screws down onto the tray. |
+| **Base tray** | Holds the Pi on four printed standoffs. Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid snap ridges, and the keyed arm socket. |
+| **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray. |
 | **Sensor arm** | Plugs into the tray socket, routes the DHT22 cable in a groove, ends in a vented sensor pocket. Includes an optional desk foot. |
 
 The arm is a **separate part**, not integral to the box, for three reasons: it prints
@@ -148,8 +149,9 @@ Dimensions are the design intent; the SCAD is authoritative once modeled.
 | Lid | ~89 × 60 mm | ~20 mm internal clear height over the board | 1 |
 | Sensor arm | ~90 × 10 mm | 80 mm reach + plug tenon, groove, pocket, optional foot | 1 |
 
-Fit clearance around the board is `board_fit` = 0.4 mm. Lid-to-tray is a lipped joint
-closed by 4 × M3 screws into the tray corner bosses.
+Fit clearance around the board is `board_fit` = 0.4 mm. Lid-to-tray is a snap-fit joint:
+ridge/groove segments on the two walled sides (x-min/SD and +Y/GPIO), flanking the SD
+notch and the arm socket, rather than screws into corner bosses.
 
 ## 6. Test parts (fit-check ladder)
 
@@ -207,6 +209,20 @@ openscad -o stl/arm.stl  -D 'part="arm"'  pi4_dht22_enclosure.scad
   repeated re-opening. Switch to heat-set inserts if the lid will come off often.
 - **Untested in plastic.** Every dimension here is calculated or taken from the Pi 4
   mechanical drawing; none of it has been printed yet.
+- **Lid snap is firm and only two-sided.** The engaging skirt is stiff (2.8 mm) as
+  modeled — expect a firm push to seat. Only the two walled sides latch; the two open
+  port-channel sides don't, so the lid can lift slightly at that free corner. Both are
+  acceptable for a stationary desk unit; see the Amendments note below.
+
+### Amendments
+
+- **2026-07-25 — lid changed from screws to snap-fit.** The lid was originally specced
+  with 4 × M3 screws into tray corner bosses (§3, §5 as first written). Once modeled, the
+  Pi fills the tray tightly enough that the corner bosses collided with the standoffs and
+  fouled the board, so the lid was switched to a snap-fit during implementation: ridge/
+  groove segments on the two walled sides, flanking the SD notch and the arm socket. The
+  M2.5 standoff screws and the M3 arm set screw are unaffected. This document has been
+  updated in place to describe the snap-fit as built; the SCAD is authoritative.
 
 ## 9. Parameter block (top of the SCAD)
 
@@ -215,7 +231,8 @@ board_w, board_l, pcb_t          Pi 4 outline and thickness
 hole_dx, hole_dy, hole_dia       58 x 49 mount pattern; pilot Ø for M2.5
 standoff_h, standoff_od          post height and diameter
 wall, floor, board_fit           shell thicknesses and board clearance
-lid_screw, lid_lip               M3 lid fixing
+snap_ridge_h, snap_ridge_z,      lid snap-fit ridge/groove
+  snap_seg_x, snap_seg_y
 vent_slot_w, vent_slot_gap       top ventilation grid
 sd_slot_w, sd_slot_z, sd_slot_h  microSD access notch
 led_win_x, led_win_w, led_win_h  LED window at the USB-C corner

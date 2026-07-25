@@ -8,6 +8,11 @@
 
 **Tech Stack:** OpenSCAD 2026.06 (manifold backend), Python 3 + trimesh, bash. PETG print target.
 
+> **Amendment (2026-07-25):** During execution the lid changed from 4 × M3 screws into
+> tray corner bosses to a **snap-fit lid** (bosses removed) — the bosses collided with
+> the standoffs and fouled the Pi board. Tasks 6-7's screw/boss details below are
+> superseded by this change; `pi4_dht22_enclosure.scad` is authoritative.
+
 ## Global Constraints
 
 - All work happens in `pi4-dht22-enclosure/` within the repo; paths below are relative to it.
