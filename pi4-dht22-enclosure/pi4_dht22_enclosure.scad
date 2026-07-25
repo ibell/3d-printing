@@ -181,8 +181,80 @@ module arm() {
             cube([foot_len + pocket_x, arm_w, foot_h + 0.01]);
 }
 
+module standoff() {
+    difference() {
+        cylinder(h = standoff_h, d = standoff_od);
+        translate([0, 0, -0.1])
+            cylinder(h = standoff_h + 0.2, d = hole_pilot_d);
+    }
+}
+
+module standoff_field() {
+    // board sits with its lower-left mount hole at (hole_edge, hole_edge)
+    for (x = [hole_edge, hole_edge + hole_dx])
+        for (y = [hole_edge, hole_edge + hole_dy])
+            translate([x, y, 0]) standoff();
+    assert(hole_dx == 58 && hole_dy == 49, "Pi 4 mount pattern must stay 58x49");
+}
+
+module tray_socket() {
+    // keyed rectangular socket protruding +Y on the GPIO wall; keyed by a notch
+    sx = arm_w + socket_fit;
+    sz = arm_h + socket_fit;
+    difference() {
+        translate([0, 0, 0]) cube([sx + 2 * wall, socket_depth + wall, sz + 2 * wall]);
+        translate([wall, -0.1, wall]) cube([sx, socket_depth + 0.1, sz]);      // tenon bore
+        translate([wall + sx / 2, socket_depth / 2, sz + wall])                 // set screw
+            cylinder(h = wall + 0.2, d = setscrew_d);
+        translate([wall + sx / 2 - 1, -0.1, wall]) cube([2, socket_depth, 1.5]); // key notch
+    }
+}
+
+module tray() {
+    // inner cavity spans the board + fit
+    in_x = board_w + 2 * board_fit;
+    in_y = board_l + 2 * board_fit;
+    out_x = in_x + wall;      // wall only on x-min (SD side); x-max open
+    out_y = in_y + wall;      // wall only on +Y (GPIO side); -Y open
+
+    difference() {
+        union() {
+            // floor
+            cube([out_x, out_y, floor]);
+            // x-min wall (SD short edge)
+            cube([wall, out_y, floor + tray_wall_h]);
+            // +Y wall (GPIO long edge)
+            translate([0, in_y, 0]) cube([out_x, wall, floor + tray_wall_h]);
+            // four corner bosses for the lid screws
+            for (cx = [wall + 3, out_x - 3])
+                for (cy = [3, in_y - 3])
+                    translate([cx, cy, floor]) cylinder(h = tray_wall_h, d = boss_d);
+        }
+        // boss pilots
+        for (cx = [wall + 3, out_x - 3])
+            for (cy = [3, in_y - 3])
+                translate([cx, cy, floor + tray_wall_h - 6])
+                    cylinder(h = 6.1, d = boss_pilot);
+        // SD notch in the x-min wall
+        translate([-0.1, (out_y - sd_slot_w) / 2, floor + standoff_h])
+            cube([wall + 0.2, sd_slot_w, sd_slot_h]);
+        // DHT22 cable exit in the +Y wall
+        translate([(out_x - cable_slot_w) / 2, in_y - 0.1, floor + standoff_h])
+            cube([cable_slot_w, wall + 0.2, cable_slot_h]);
+        // floor vents under the board
+        for (i = [-2 : 2])
+            translate([out_x / 2 + i * (vent_slot_w + vent_gap) - vent_slot_w / 2,
+                       (out_y - vent_slot_len) / 2, -0.1])
+                cube([vent_slot_w, vent_slot_len, floor + 0.2]);
+    }
+    // standoffs, seated so the board's holes land on the 58x49 pattern
+    translate([wall + board_fit, board_fit, floor]) standoff_field();
+    // arm socket on the GPIO wall, protruding +Y
+    translate([(out_x - (arm_w + socket_fit + 2 * wall)) / 2, out_y, floor])
+        tray_socket();
+}
+
 /* modules added in later tasks */
-module tray()         {}
 module lid()          {}
 module fit_coupon()   {}
 module assembly()     {}
