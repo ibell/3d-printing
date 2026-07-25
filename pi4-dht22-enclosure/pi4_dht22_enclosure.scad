@@ -151,8 +151,37 @@ module sensor_pocket() {
 
 module sensor_gauge() { sensor_pocket(); }
 
+module arm() {
+    pocket_x = sensor_pcb_t + sensor_slot_fit + 2 * pocket_wall; // depth once rotated
+    pocket_y = sensor_pcb_w + sensor_slot_fit + 2 * pocket_wall; // width once rotated
+    span_end = socket_depth + arm_len;                          // where pocket begins
+
+    assert(arm_len >= 50, "arm_len below 50 mm defeats thermal isolation");
+
+    // tenon + straight arm as one flat bar, centred on Y=0, with the cable
+    // groove cut into the top face (recess, not a rib — see task-3 brief note).
+    difference() {
+        translate([0, -arm_w / 2, 0])
+            cube([span_end, arm_w, arm_h]);
+
+        // cable groove along the top of the arm
+        translate([socket_depth, -arm_groove_w / 2, arm_h - arm_groove_d])
+            cube([arm_len, arm_groove_w, arm_groove_d + 0.1]);
+    }
+
+    // pocket at the end, rotated so its +Y grille faces +X (outboard)
+    translate([span_end, 0, 0])
+        rotate([0, 0, -90])
+            translate([-pocket_y / 2, 0, 0])   // recentre width on the arm axis
+                sensor_pocket();
+
+    // optional desk foot under the pocket end
+    if (arm_foot)
+        translate([span_end - foot_len, -arm_w / 2, -foot_h])
+            cube([foot_len + pocket_x, arm_w, foot_h + 0.01]);
+}
+
 /* modules added in later tasks */
-module arm()          {}
 module tray()         {}
 module lid()          {}
 module fit_coupon()   {}
