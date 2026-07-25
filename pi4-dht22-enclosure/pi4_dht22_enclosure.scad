@@ -18,6 +18,9 @@ wall        = 2.0;
 floor       = 2.0;
 board_fit   = 0.4;
 tray_wall_h = 10.0;    // tray wall height above floor
+snap_ridge_h = 0.8;   // how far the ridge protrudes out from the wall
+snap_ridge_w = 20.0;  // ridge length along the wall
+snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
 lid_clear   = 20.0;    // internal clear height above board top
 lid_wall    = 2.0;
 lid_lip     = 4.0;     // lip overlap depth
@@ -217,6 +220,14 @@ module tray() {
     out_x = in_x + wall;      // wall only on x-min (SD side); x-max open
     out_y = in_y + wall;      // wall only on +Y (GPIO side); -Y open
 
+    // snap-ridge chamfer profile: a wedge that tapers from a taller
+    // cross-section flush with the wall face down to a shorter cross-section
+    // at the tip, giving ~45 deg chamfers top and bottom (rise ~= run ==
+    // snap_ridge_h) so it prints support-free and a lid groove can ride over it.
+    ridge_base_half = 1.5;                    // half-height at the wall face
+    ridge_tip_half  = ridge_base_half - snap_ridge_h;  // half-height at the tip
+    ridge_slab      = 0.03;                   // thin slab thickness for hull()
+
     difference() {
         union() {
             // floor
@@ -225,22 +236,36 @@ module tray() {
             cube([wall, out_y, floor + tray_wall_h]);
             // +Y wall (GPIO long edge)
             translate([0, in_y, 0]) cube([out_x, wall, floor + tray_wall_h]);
-            // four corner bosses for the lid screws
-            for (cx = [wall + 3, out_x - 3])
-                for (cy = [3, in_y - 3])
-                    translate([cx, cy, floor]) cylinder(h = tray_wall_h, d = boss_d);
+            // snap ridge on the outer (x=0, facing -X) face of the x-min wall
+            hull() {
+                translate([-0.01, out_y / 2 - snap_ridge_w / 2,
+                           snap_ridge_z - ridge_base_half])
+                    cube([ridge_slab, snap_ridge_w, 2 * ridge_base_half]);
+                translate([-snap_ridge_h, out_y / 2 - snap_ridge_w / 2,
+                           snap_ridge_z - ridge_tip_half])
+                    cube([ridge_slab, snap_ridge_w, 2 * ridge_tip_half]);
+            }
+            // snap ridge on the outer (y=out_y, facing +Y) face of the +Y wall
+            hull() {
+                translate([out_x / 2 - snap_ridge_w / 2, out_y - ridge_slab + 0.01,
+                           snap_ridge_z - ridge_base_half])
+                    cube([snap_ridge_w, ridge_slab, 2 * ridge_base_half]);
+                translate([out_x / 2 - snap_ridge_w / 2, out_y + snap_ridge_h - ridge_slab,
+                           snap_ridge_z - ridge_tip_half])
+                    cube([snap_ridge_w, ridge_slab, 2 * ridge_tip_half]);
+            }
         }
-        // boss pilots
-        for (cx = [wall + 3, out_x - 3])
-            for (cy = [3, in_y - 3])
-                translate([cx, cy, floor + tray_wall_h - 6])
-                    cylinder(h = 6.1, d = boss_pilot);
-        // SD notch in the x-min wall
-        translate([-0.1, (out_y - sd_slot_w) / 2, floor + standoff_h])
-            cube([wall + 0.2, sd_slot_w, sd_slot_h]);
-        // DHT22 cable exit in the +Y wall
+        // SD notch in the x-min wall. Cut reaches past x=0 by snap_ridge_h+0.1
+        // (not just the wall face) so it also punches cleanly through the new
+        // snap ridge, which is centred on the same wall and would otherwise
+        // leave a thin unsupported rib bridging the SD-card opening.
+        translate([-(snap_ridge_h + 0.1), (out_y - sd_slot_w) / 2, floor + standoff_h])
+            cube([wall + snap_ridge_h + 0.2, sd_slot_w, sd_slot_h]);
+        // DHT22 cable exit in the +Y wall. Same reasoning: extend past
+        // y=out_y by snap_ridge_h+0.1 so the cut also clears the snap ridge
+        // on this wall instead of leaving a rib across the cable exit.
         translate([(out_x - cable_slot_w) / 2, in_y - 0.1, floor + standoff_h])
-            cube([cable_slot_w, wall + 0.2, cable_slot_h]);
+            cube([cable_slot_w, wall + snap_ridge_h + 0.2, cable_slot_h]);
         // floor vents under the board
         for (i = [-2 : 2])
             translate([out_x / 2 + i * (vent_slot_w + vent_gap) - vent_slot_w / 2,
