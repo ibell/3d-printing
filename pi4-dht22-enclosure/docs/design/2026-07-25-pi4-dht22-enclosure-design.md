@@ -12,8 +12,8 @@ A three-part 3D-printed desk enclosure for a Raspberry Pi 4 Model B running as a
 temperature-monitoring node, plus a plug-in arm that holds a DHT22 temperature/humidity
 module out in free air, away from the Pi's own heat. All three parts print flat with no
 supports and assemble **entirely by hand with no fasteners at all**: the Pi snaps onto
-four posts, the lid snaps onto the tray, the arm clicks into its socket, and the DHT22
-clicks onto the arm (see §11, 2026-08-15).
+four posts and is clamped by pads under the lid, the lid snaps onto the tray, the arm is a
+keyed friction fit in its socket, and the DHT22 clips onto the arm (see §11, 2026-08-15).
 
 The reason the sensor is on an arm at all is thermal: a DHT22 sitting on or inside a
 warm enclosure reads the box, not the room. The arm exists to move the sensor out of
@@ -72,7 +72,7 @@ too. For a different module, measure it and set `board_len/wid/thk`, `mnt_from_e
 |---|---|
 | **Base tray** | Holds the Pi on four printed locating posts (the lid's pads clamp it down). Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray. |
-| **Sensor arm** | Plugs into the tray socket and clicks into a detent, routes the DHT22 cable in a groove, and ends in a snap cradle (one post + two anti-rotation rails); the DHT22 board clicks on with its sensor cantilevered into free air. |
+| **Sensor arm** | Keyed friction fit into the tray socket, routes the DHT22 cable in a groove, and ends in a cradle (one post + two anti-rotation rails); the DHT22 board clips on with its sensor cantilevered into free air. |
 
 The arm is a **separate part**, not integral to the box, for three reasons: it prints
 flat and strong along its length; the thin plug joint is a poor heat conductor, so the
@@ -144,13 +144,25 @@ opening, which cannot mis-register the way a printed pipe can.
 
 The DHT22 plugs onto the GPIO header on the walled long edge. A **cable-exit slot** in
 that wall passes the three wires out to a **keyed rectangular socket** in the tray corner
-nearest the GPIO exit. The socket takes the arm's plug tenon and is secured by a **rounded
-detent**: each socket side wall is freed into a cantilever tab carrying a bump that drops
-into a matching vertical groove in the tenon. The tenon is otherwise full-section and keeps
-its key rib, so the joint's lateral and roll stiffness are what the set-screw version had —
-only the axial lock became a click. Round bumps mean the arm is hand-removable, which suits
-a part you may want to reposition; the Pi's barbs are deliberately less forgiving.
-Keying fixes the arm's orientation so the sensor always points the intended way.
+nearest the GPIO exit. The socket takes the arm's plug tenon as a **plain keyed friction
+fit** — a close sliding bore (`socket_fit` 0.4 mm) plus the key rib, with nothing that
+flexes. Keying fixes the arm's orientation so the sensor always points the intended way.
+
+**Two sprung versions of this joint were tried and abandoned on print evidence**
+(2026-08-15), which is why it is deliberately dumb:
+
+- A **split snap-post barb** (as on the DHT22 cradle) broke after a *single* insertion. A
+  post standing in Z is a stack of layers, and flexing it sideways loads the bond between
+  them — the weakest direction in an FDM part.
+- **Cantilever tabs** in the socket side walls **fused during printing**. Freeing a tab
+  needs ~1 mm slots above and below it, and the socket necessarily prints with its bore
+  *horizontal*, because it is part of the tray and the tray prints floor-down. Those slots
+  are therefore horizontal gaps that close up. Rotating the part fixes the slots and breaks
+  everything else.
+
+The arm carries nothing but its own weight, so friction plus the key is enough. If it ends
+up too loose the honest fix is a fastener, not a third sprung feature: drill the socket's
+outer wall and run a screw into the tenon.
 The path is deliberately short: GPIO → exit slot → arm cable groove → cradle.
 
 ### Sensor placement — off the plume, not just off the box
@@ -215,8 +227,10 @@ cheapest thing to get wrong, so prove it first.
    adjacent port-channel edge**. Verifies the two Pi-side things that actually have to be
    right: that the locating pip enters the Pi's hole at the correct hole-to-edge spacing,
    and that a real Pi's port stack clears the open channel.
-3. **`socket_gauge`** — the arm socket alone, on a small pad. Proves the arm's detent
-   against the already-printed arm for a few grams, rather than after an 8-hour tray.
+3. **`socket_gauge`** — the arm socket alone, on a small pad. Proves the tenon fit against
+   the already-printed arm for a few grams, rather than after an 8-hour tray. **Print it as
+   exported**; standing it on end gives a cleaner bore and a meaningless result, because
+   the tray can only ever print this socket with its bore horizontal.
 4. Then the production `tray`, `lid`, and `arm`.
 
 ## 7. Printing
@@ -293,11 +307,8 @@ led_win_w, led_win_h             LED window at the USB-C corner (x hardcoded)
 cable_slot_w, cable_slot_h       DHT22 cable exit on the GPIO edge
 arm_len, arm_w, arm_h            sensor arm reach and cross-section
 arm_groove_w, arm_groove_d       cable groove along the arm top
-socket_depth, socket_fit,        keyed plug socket + detent
+socket_depth, socket_fit,        keyed plug socket; friction fit lives in socket_fit
   key_w, key_h, key_fit          socket ceiling notch keyed to the tenon rib
-tab_len, tab_slot                cantilever tab freed in each socket side wall
-bump_d, bump_proud, bump_at,     detent bump and its mating tenon groove
-  bump_fit, bump_off
 board_len, board_wid, board_thk  DHT22 breakout board — MEASURE yours
 mnt_from_end, mnt_hole_d         single mounting hole: position and diameter
 grip_len, board_lift             cradle pad/rail reach; board airflow lift

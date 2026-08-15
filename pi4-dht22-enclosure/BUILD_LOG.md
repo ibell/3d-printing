@@ -1,5 +1,48 @@
 # Build log
 
+## 2026-08-15 (evening) — socket detent abandoned; back to a plain keyed fit
+
+Printed `socket_gauge`. **The arm would not enter at all.** Two independent causes:
+
+1. **Sign error in the bump placement (mine).** The detent bumps were positioned at
+   `wall + bump_d/2 - bump_proud` when the correct expression is
+   `wall + bump_proud - bump_d/2`. They protruded **1.95 mm into the bore instead of
+   0.45 mm**, leaving a 6.5 mm clear gap for a 10 mm tenon — 3.5 mm of interference. No
+   print orientation could have fixed that.
+2. **The cantilever tabs fused in the print.** Freeing a tab needs ~1 mm slots above and
+   below it, and the socket necessarily prints with its bore *horizontal* because it is
+   part of the tray and the tray prints floor-down. Those slots are horizontal gaps and
+   they closed up.
+
+Rotating the gauge onto another face does fix the slots — and simultaneously destroys the
+point of the gauge, which is to reproduce how the socket prints **as part of the tray**.
+A gauge printed in an orientation the tray can never use predicts nothing. Noted in the
+model and the README.
+
+**Decision: no third attempt at a sprung joint.** The socket is now a plain keyed friction
+fit — close bore plus the key rib, nothing that flexes. That is two sprung features
+abandoned on print evidence (the cradle barb broke across its layer lines; these tabs
+fused), and the arm carries nothing but its own weight. If the fit is loose, the honest fix
+is a fastener, not more geometry.
+
+**Consequence, in the good direction:** removing the tenon's detent grooves returns the arm
+to exactly the solid already printed. Verified by sampling — 0 of 40,000 points disagree,
+with identical bounding box and volume, for both `arm` and `sensor_gauge`. **Nothing needs
+reprinting.**
+
+Two test-harness lessons, both applied:
+
+- `arm-in-socket` had a **60 mm³ tolerance to "allow the detent press", and that masked the
+  bug** — it passed at 28.9 mm³ while the joint was physically impossible. With a plain
+  socket the seated arm should touch nothing, so the tolerance is now 2 mm³ and the check
+  reports 0.0. A tolerance loose enough to accommodate an intended interference is loose
+  enough to hide an unintended one.
+- The gauge's back stop sat *inside* the bore, eating its first 2 mm, so it would have
+  reported a shallower fit than the tray gives. Moved behind the socket.
+
+Next: reprint `socket_gauge` **as exported** and confirm the arm slides in and keys
+correctly. Then `fit_coupon`, then tray + lid.
+
 ## 2026-08-15 (later still) — zero fasteners; two socket bugs caught before printing
 
 ### Field evidence: the cradle's barb snapped off after ONE insertion

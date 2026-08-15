@@ -36,8 +36,13 @@ PAIRS = [
             translate([out_x/2, out_y, floor + wall]) rotate([0,0,90]) arm();
         }
         """,
-        # the detent bumps are meant to press into the tenon grooves; allow that
-        60.0,
+        # Was 60.0 to "allow the detent press" -- which masked a real bug: the
+        # detent bumps were positioned with an inverted sign and protruded
+        # 1.95 mm into the bore instead of 0.45 mm, leaving a 6.5 mm gap for a
+        # 10 mm tenon. The arm could not be inserted, and the check passed at
+        # 28.9 mm^3. With a plain friction socket the seated arm should touch
+        # essentially nothing, so the tolerance is tight enough to notice.
+        2.0,
     ),
     (
         "lid-on-tray",

@@ -25,11 +25,11 @@ the arm groove. For a different board, measure it and set `board_len` /
 |---|---|
 | **Tray** | Holds the Pi on four locating posts — no screws; the lid's pads press it down. Carries the SD notch, DHT22 cable exit, floor vents, snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray — no lid screws. Four underside pads clamp the Pi onto its standoffs. |
-| **Arm** | Plugs into the tray socket and clicks into a detent — no set screw. Routes the DHT22 cable in a groove and ends in a snap cradle (one post + two rails) that the DHT22 board clicks onto — sensor cantilevered into free air. |
+| **Arm** | Plugs into the tray socket as a keyed friction fit — no set screw, nothing sprung. Routes the DHT22 cable in a groove and ends in a snap cradle (one post + two rails) that the DHT22 board clicks onto — sensor cantilevered into free air. |
 
 **Fasteners, in total: none.** The Pi sits on four locating posts and is clamped
-by pads under the lid, the lid snaps onto the tray, the arm clicks into its
-socket, and the DHT22 clicks onto the arm.
+by pads under the lid, the lid snaps onto the tray, the arm is a keyed friction
+fit in its socket, and the DHT22 clips onto the arm.
 
 Note the Pi is only held down **with the lid fitted** — with the lid off it is
 located but free to lift.
@@ -69,8 +69,9 @@ in plastic:
 2. `stl/fit_coupon.stl` — one standoff plus an open-channel edge. Confirms the
    locating pip enters the Pi's hole at the right spacing and that its ports
    clear the open channel.
-3. `stl/socket_gauge.stl` — the arm socket alone. Confirms the arm's detent
-   clicks before you commit to the long tray print.
+3. `stl/socket_gauge.stl` — the arm socket alone. Confirms the arm's tenon slides
+   in before you commit to the long tray print. **Print it as exported** — do not
+   rotate it onto another face, or it stops predicting how the tray prints.
 4. `stl/tray.stl`, `stl/lid.stl`, `stl/arm.stl` — the production set.
 
 ## Printing

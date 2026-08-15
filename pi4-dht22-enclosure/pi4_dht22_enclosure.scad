@@ -80,26 +80,23 @@ arm_groove_w = 4.0;
 arm_groove_d = 2.5;
 
 /* ---------- arm socket (tray, GPIO side) ----------
-   The tenon is a close sliding fit and keeps its key rib, so the joint's
-   lateral and roll stiffness are unchanged. Only the axial lock changed: the
-   M3 set screw is replaced by a rounded detent. Each socket side wall carries
-   a cantilever tab with a round bump that drops into a matching vertical
-   groove in the tenon -- a firm click that is still hand-removable, which the
-   arm wants and the Pi does not. */
+   A PLAIN keyed friction socket: close sliding bore + key rib, nothing that
+   flexes. Two attempts at a sprung joint were abandoned on print evidence
+   (2026-08-15):
+     - the split snap-post barb on the DHT22 cradle broke after ONE insertion,
+       because a post standing in Z flexes ACROSS its layer lines;
+     - the socket's cantilever tabs FUSED in the print, because freeing them
+       needs 1.0 mm horizontal slots and the socket necessarily prints with its
+       bore horizontal (it is part of the tray, which prints floor-down).
+   The tenon's own friction plus the key rib is what holds the arm, which
+   carries nothing but its own weight. If it ends up too loose, the honest fix
+   is a fastener, not a third sprung feature: drill the socket's outer wall and
+   run a screw into the tenon. */
 socket_depth = 10.0;   // tenon length
-socket_fit   = 0.4;
+socket_fit   = 0.4;    // bore-over-tenon clearance; the friction fit lives here
 key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key rib
 key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
 key_fit      = 0.4;    // rib-in-notch lateral clearance
-tab_len      = 7.0;    // cantilever tab length; rooted inboard, free at the mouth
-tab_slot     = 1.0;    // slot width above and below the tab, freeing it to flex
-bump_d       = 2.4;    // detent bump diameter (vertical cylinder)
-bump_proud   = 0.45;   // how far the bump protrudes into the bore
-bump_at      = 7.5;    // bump centre, from the bore's inner (blind) end
-bump_fit     = 0.1;    // groove-over-bump clearance
-// how far the bump centre sits outside the tenon face; the bump therefore
-// penetrates the tenon by bump_d/2 - bump_off, and the groove need be no deeper
-bump_off     = bump_d / 2 - bump_proud - socket_fit / 2;
 
 /* ---------- DHT22 sensor board + snap-post cradle ---------- */
 // Measured off the board in hand (2026-08-15): 29.52 x 13.0 mm, ONE mounting
@@ -218,16 +215,6 @@ module arm() {
         translate([socket_depth, -arm_groove_w / 2, arm_h - arm_groove_d])
             cube([arm_len, arm_groove_w, arm_groove_d + 0.1]);
 
-        // detent grooves in the tenon sides, mating the socket's tab bumps.
-        // Vertical cylinders, so they print without overhangs and self-centre
-        // the bump. Depth follows bump_proud; bump_fit keeps it from binding.
-        // The tenon is otherwise untouched -- full section, so the joint keeps
-        // the bending stiffness the set screw version had.
-        // groove centre sits bump_off OUTSIDE the tenon face, so the groove is
-        // only as deep as the bump actually protrudes rather than a full radius
-        for (gy = [-1, 1])
-            translate([bump_at, gy * (arm_w / 2 + bump_off), -0.05])
-                cylinder(d = bump_d + bump_fit, h = arm_h + 0.1);
     }
 
     // key rib on the TOP of the tenon, centred on the arm axis and running the
@@ -297,22 +284,7 @@ module tray_socket() {
         // key notch up into the bore ceiling, full depth
         translate([wall + sx / 2 - key_w / 2, -0.1, top_z - 0.01])
             cube([key_w, socket_depth + 0.2, key_h + 0.01]);
-
-        // free each side wall into a cantilever tab: a slot above and below,
-        // rooted inboard, free at the mouth so the entering tenon meets the
-        // compliant end first and cams it open.
-        for (sx0 = [0, wall + sx])
-            for (sz0 = [bore_z - tab_slot, bore_z + sz])
-                translate([sx0 - 0.1, socket_depth - tab_len, sz0])
-                    cube([wall + 0.2, tab_len + 0.2, tab_slot]);
     }
-
-    // detent bumps on the tabs, protruding bump_proud into the bore. Round, so
-    // insertion and removal are both smooth -- the arm is meant to come off.
-    for (bx = [wall + bump_d / 2 - bump_proud,
-               wall + sx - bump_d / 2 + bump_proud])
-        translate([bx, bump_at, bore_z])
-            cylinder(d = bump_d, h = sz);
 }
 
 module tray() {
@@ -523,15 +495,25 @@ module fit_coupon() {
 }
 
 // Cheap test print for the arm joint: the socket exactly as the tray carries
-// it, on a small base pad. Lets the detent be tuned against the already-printed
+// it, on a small base pad. Lets the fit be checked against the already-printed
 // arm for a few grams, rather than discovering it after an 8-hour tray.
+//
+// PRINT IT AS EXPORTED -- do not rotate it onto another face. The whole point
+// is that it reproduces how the socket prints as part of the TRAY, which prints
+// floor-down and therefore always has this bore horizontal. Standing the gauge
+// on end gives a nicer bore and a meaningless result.
 module socket_gauge() {
-    sw = arm_w + socket_fit + 2 * wall;
+    sw  = arm_w + socket_fit + 2 * wall;
     pad = 4;
-    translate([pad, 0, 0]) tray_socket();
-    // pad + a back stop standing in for the tray wall that closes the bore
-    cube([sw + 2 * pad, wall, floor + wall + arm_h + socket_fit + wall]);
-    translate([0, 0, 0]) cube([sw + 2 * pad, socket_depth, floor]);
+    h   = floor + wall + arm_h + socket_fit + wall;
+    // Back stop stands in for the tray wall that closes the bore. It sits
+    // BEHIND the socket (y < wall), not inside it -- placed inside, it would
+    // eat the first 2 mm of bore and bottom the tenon out early, so the gauge
+    // would report a shallower fit than the tray actually gives.
+    cube([sw + 2 * pad, wall, h]);
+    translate([pad, wall, 0]) tray_socket();
+    // base pad, so the gauge stands up the way the tray floor holds the socket
+    cube([sw + 2 * pad, socket_depth + wall, floor]);
 }
 module assembly() {
     // Visual-only view (not printed): tray + Pi ghost + snap-fit lid + plugged
