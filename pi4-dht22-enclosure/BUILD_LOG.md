@@ -17,8 +17,12 @@ Layout confirmed visually against `docs/renders/sensor-cradle-fit.png` before re
 `arm` is now ~106 × 17.3 mm (was ~106 × 26). All five parts still render single,
 watertight, min z = 0; `tests/check_all.sh` passes.
 
-Next: reprint `stl/sensor_gauge.stl` and confirm the board seats without wobble or
-rotation. Then `stl/fit_coupon.stl` against the real Pi, then the production set.
+**Both printed and confirmed.** Reprinted `sensor_gauge` — board seats firm, no lateral
+play, no rotation, so 2.75 mm shaft + 0.3 mm rail clearance are the right numbers. Then
+printed the full `arm`: the post reproduced identically at the end of the longer print and
+the board snaps on the same way. Cradle and arm are **done**.
+
+Next: `stl/fit_coupon.stl` against the real Pi, then the production `tray` and `lid`.
 
 Still unmeasured: the white sensor body's footprint and height, and the cable bundle
 width. Neither is load-bearing — the sensor cantilevers into open air and the cable is
