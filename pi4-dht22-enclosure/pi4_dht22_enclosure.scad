@@ -20,7 +20,15 @@ board_fit   = 0.4;
 tray_wall_h = 10.0;    // tray wall height above floor
 snap_ridge_h = 0.8;   // how far the ridge protrudes out from the wall
 snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
-lid_clear   = 20.0;    // internal clear height above board top
+/* Internal clear height above the board top. NOT a round number picked for
+   looks -- it is the GPIO jumper stack-up, which is the tallest thing in the
+   box. The DHT22's female jumper housings slide down over the header pins, and
+   the wire then has to turn over above them. The original 20.0 was a guess and
+   was too low. jump_stack is measured on the real leads; re-measure it if you
+   change jumpers, since housings vary by a couple of mm. */
+jump_stack  = 24.0;    // MEASURED 2026-08-15: PCB top surface -> top of jumper
+wire_bend   = 5.0;     // room above the jumper for the wire to turn over
+lid_clear   = jump_stack + wire_bend;   // 29.0
 lid_wall    = 2.0;
 lid_fit     = 0.3;     // lid-over-tray clearance
 
@@ -60,9 +68,21 @@ vent_slot_w   = 3.0;
 vent_slot_len = 24.0;
 vent_gap      = 3.0;
 
-/* ---------- microSD notch (SD short edge = x-min) ---------- */
-sd_slot_w = 14.0;
-sd_slot_h = 4.0;
+/* ---------- microSD notch (SD short edge = x-min) ----------
+   The card lives BELOW the board: its holder is on the Pi's underside, so an
+   inserted card sits roughly 1-2 mm under the PCB, not level with it. The
+   first version put the notch from the board underside UPWARDS, which is
+   exactly backwards -- the card fouled solid wall about 1 mm below the notch
+   (found on the printed tray, 2026-08-15). The notch is now anchored BELOW the
+   board underside and reaches only slightly above it. */
+sd_slot_w    = 14.0;   // notch width (card is ~11 mm)
+sd_below     = 2.8;    // notch reaches this far BELOW the board underside
+sd_above     = 0.8;    // ...and only this far above it
+sd_slot_h    = sd_below + sd_above;
+sd_slot_z    = floor + standoff_h - sd_below;   // notch bottom
+// Centre the notch on the BOARD's centreline, not the tray's -- they differ by
+// board_fit, and the card only has ~1.5 mm of margin in a 14 mm notch.
+sd_slot_y    = board_fit + board_l / 2 - sd_slot_w / 2;
 
 /* ---------- LED window (USB-C corner) ---------- */
 led_win_w = 10.0;
@@ -336,7 +356,7 @@ module tray() {
         // (not just the wall face) so it also punches cleanly through the new
         // snap ridge, which is centred on the same wall and would otherwise
         // leave a thin unsupported rib bridging the SD-card opening.
-        translate([-(snap_ridge_h + 0.1), (out_y - sd_slot_w) / 2, floor + standoff_h])
+        translate([-(snap_ridge_h + 0.1), sd_slot_y, sd_slot_z])
             cube([wall + snap_ridge_h + 0.2, sd_slot_w, sd_slot_h]);
         // DHT22 cable exit in the +Y wall. Same reasoning: extend past
         // y=out_y by snap_ridge_h+0.1 so the cut also clears the snap ridge
@@ -361,6 +381,7 @@ module tray() {
 module lid_assembled() {
     // ---- derived geometry (ASSEMBLED coords, z up from tray floor bottom) ----
     board_top = floor + standoff_h + pcb_t;          // 8.4  board top surface
+    jump_top  = board_top + jump_stack;              // top of the GPIO jumpers
     out_x     = board_w + 2 * board_fit + wall;       // 87.8 tray outer (x-min wall @ x=0)
     out_y     = board_l + 2 * board_fit + wall;       // 58.8 tray outer (+Y wall face)
     top_z0    = board_top + lid_clear;                // 28.4 top-plate underside
@@ -412,8 +433,20 @@ module lid_assembled() {
                     translate([wall + board_fit + hx, board_fit + hy,
                                board_top - hold_preload])
                         difference() {
-                            cylinder(d1 = hold_d, d2 = hold_base_d,
-                                     h = top_z0 - board_top + hold_preload + 0.01);
+                            union() {
+                                // Straight Ø hold_d for the whole height the
+                                // GPIO jumpers occupy. The flare below would
+                                // otherwise lean out over the header, which
+                                // sits only ~3.5 mm from these holes.
+                                cylinder(d = hold_d,
+                                         h = jump_top - board_top + hold_preload);
+                                // Flare only ABOVE the jumpers. Its only job is
+                                // bed adhesion: the lid prints closed-top-down,
+                                // so this wide end is what stands on the bed.
+                                translate([0, 0, jump_top - board_top + hold_preload])
+                                    cylinder(d1 = hold_d, d2 = hold_base_d,
+                                             h = top_z0 - jump_top + 0.01);
+                            }
                             // clear the locating pip standing in the board's hole
                             translate([0, 0, -0.05])
                                 cylinder(d = hold_bore_d, h = hold_bore_h + 0.05);

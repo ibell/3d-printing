@@ -1,5 +1,36 @@
 # Build log
 
+## 2026-08-15 (night) — printed tray finds two real errors: SD notch and lid height
+
+### microSD notch was at the wrong height (my error)
+
+The card fouled the wall. The notch ran from the board **underside upwards** — but the
+microSD holder is on the Pi's **underside**, so an inserted card sits *below* the PCB, not
+level with it. Notch was at z 7.0–11.0; the card is at z ≈ 5.1–6.1, so it hit solid wall
+about 1 mm below the opening. Now anchored below the board underside (`sd_below` 2.8,
+`sd_above` 0.8 → z 4.2–7.8) and centred on the **board's** centreline rather than the
+tray's — they differ by `board_fit`, and an 11 mm card in a 14 mm notch has little to spare.
+
+### Lid was too short for the GPIO jumpers
+
+`lid_clear` was 20.0, a guess. Measured on the real leads: **24 mm from the PCB top surface
+to the top of the jumper**. Now `lid_clear = jump_stack + wire_bend` = 29.0, so there is
+5 mm above the jumpers for the wire to turn over. Lid grows from 25.4 to 34.4 mm tall.
+
+### And a knock-on the jumper check caught
+
+Raising the lid was not enough on its own: the hold-down pads **flare to Ø8 near the
+ceiling**, and that flare leaned out over the GPIO header, which sits only ~3.5 mm from the
+mounting holes. The flare exists purely for bed adhesion (the lid prints closed-top-down, so
+that wide end stands on the bed), so it now starts **above** `jump_stack` and the pad is
+straight Ø6 for the whole height the jumpers occupy.
+
+Two new assembly checks, both of which would have caught these before printing:
+`sd-card-clears-notch` (a card solid must pass the tray) and `lid-clears-gpio-jumpers`
+(the header footprint extruded to `jump_stack` must not touch the lid). Suite passes.
+
+**The printed tray is superseded** — it has the old SD notch and needs a reprint.
+
 ## 2026-08-15 (night, later) — fit_coupon passes: the Pi-side interface is confirmed
 
 Printed `fit_coupon` and checked it against the real Pi 4. **Go.** The locating pip enters

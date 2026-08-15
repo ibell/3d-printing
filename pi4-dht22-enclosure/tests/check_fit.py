@@ -52,6 +52,37 @@ PAIRS = [
         60.0,
     ),
     (
+        # An inserted microSD must pass through the notch. The card lives BELOW
+        # the board (its holder is on the Pi's underside), which the first
+        # version got backwards -- the notch ran upward from the board underside
+        # and the card fouled solid wall ~1 mm below it.
+        "sd-card-clears-notch",
+        """
+        card_z = floor + standoff_h - 1.9;   // card sits under the PCB
+        intersection() {
+            tray();
+            translate([-2, board_fit + board_l/2 - 5.5, card_z])
+                cube([15, 11, 1.0]);
+        }
+        """,
+        0.5,
+    ),
+    (
+        # The GPIO jumper stack is the tallest thing in the box; the lid must
+        # not sit on it. Modelled as the header footprint extended up by
+        # the measured jump_stack from the board top.
+        "lid-clears-gpio-jumpers",
+        """
+        btop = floor + standoff_h + pcb_t;
+        intersection() {
+            lid_assembled();
+            translate([wall + board_fit + 7, board_fit + 49.5, btop])
+                cube([50.8, 5.1, jump_stack]);
+        }
+        """,
+        0.5,
+    ),
+    (
         # The lid pads must NOT be resting on the locating pips -- if their
         # clearance bores were too shallow or too narrow the pads would bear on
         # the pip tips instead of the PCB, and the Pi would never be clamped.
