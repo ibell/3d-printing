@@ -136,6 +136,7 @@ else if (part == "tray")         tray();
 else if (part == "lid")          lid();
 else if (part == "fit_coupon")   fit_coupon();
 else if (part == "socket_gauge") socket_gauge();
+else if (part == "lid_gauge")    lid_gauge();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
@@ -520,6 +521,42 @@ module socket_gauge() {
     // base pad, so the gauge stands up the way the tray floor holds the socket
     cube([sw + 2 * pad, socket_depth + wall, floor]);
 }
+// Cheap test print for the LAST untested sprung feature: the lid snap. Cut
+// straight out of lid_assembled() -- an intersection, not a re-model -- so the
+// skirt, lip and groove are bit-identical to the real lid and cannot drift.
+//
+// Covers one segment of the +Y (GPIO) wall snap. Press it onto the real printed
+// tray's ridge to judge the snap force before committing to the 22 cm^3 lid.
+//
+// Print AS EXPORTED. It is flipped the same way lid() is, so the skirt points
+// up and the groove's overhang faces the same way it will on the real lid; a
+// coupon printed in some other orientation would not predict the real one.
+module lid_gauge() {
+    out_y   = board_l + 2 * board_fit + wall;
+    top_z1  = floor + standoff_h + pcb_t + lid_clear + lid_wall;
+    seg     = snap_seg_y[0];                       // [x0, len] of one +Y segment
+    x0      = seg[0] + 2;
+    xw      = min(seg[1] - 4, 20);                 // a manageable slice of it
+    zlo     = 5.0;                                 // skirt bottom
+    zhi     = snap_ridge_z + 7.0;                  // well above the groove
+    base    = 2.0;                                 // foot, added after the flip
+
+    // The flip maps assembled z -> top_z1 - z, so the band lands at
+    // [top_z1-zhi, top_z1-zlo]. Shift it down so its cut face sits on the foot
+    // rather than floating where the (absent) top plate used to hold it.
+    translate([0, 0, base - (top_z1 - zhi)])
+        translate([0, out_y + snap_ridge_h + lid_fit + lid_wall, top_z1])
+            rotate([180, 0, 0])
+                intersection() {
+                    lid_assembled();
+                    translate([x0, out_y - 2, zlo])
+                        cube([xw, 12, zhi - zlo]);
+                }
+    // foot, so the thin skirt has something to stand on. The flip also maps
+    // y -> py1 - y, putting the band in print-y 0..~2.8.
+    translate([x0, -1, 0]) cube([xw, 5, base]);
+}
+
 module assembly() {
     // Visual-only view (not printed): tray + Pi ghost + snap-fit lid + plugged
     // sensor arm, all in ASSEMBLED coords (tray at origin, z up from floor).

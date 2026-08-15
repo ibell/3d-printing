@@ -72,11 +72,17 @@ in plastic:
 3. `stl/socket_gauge.stl` — the arm socket alone. Confirms the arm's tenon slides
    in before you commit to the long tray print. **Print it as exported** — do not
    rotate it onto another face, or it stops predicting how the tray prints.
-4. `stl/tray.stl`, `stl/lid.stl`, `stl/arm.stl` — the production set.
+4. `stl/tray.stl` — the tray. Its own risks (bridging over the bore and vents)
+   are things no coupon predicts better than the tray itself, so it goes next.
+5. `stl/lid_gauge.stl` — one segment of the lid's snap skirt, cut straight out
+   of the real lid geometry. Press it onto the **printed tray's** ridge to judge
+   the snap force before committing to the 22 cm³ lid. **Print as exported** —
+   it is flipped the way the lid is, so the groove's overhang matches.
+6. `stl/lid.stl` — the lid.
 
 ## Printing
 
-PETG, 0.2 mm layers, 3 perimeters, ~20% infill, no supports. All six parts
+PETG, 0.2 mm layers, 3 perimeters, ~20% infill, no supports. All seven parts
 render as single watertight bodies and pass `tests/check_all.sh`, which also
 checks that the parts actually assemble (no solid overlap) and that nothing
 overhangs unsupported. STLs in `stl/` are pre-oriented (min Z = 0) — drop them
@@ -92,6 +98,7 @@ openscad -o stl/tray.stl         -D 'part="tray"'         pi4_dht22_enclosure.sc
 openscad -o stl/lid.stl          -D 'part="lid"'          pi4_dht22_enclosure.scad
 openscad -o stl/fit_coupon.stl   -D 'part="fit_coupon"'   pi4_dht22_enclosure.scad
 openscad -o stl/socket_gauge.stl -D 'part="socket_gauge"' pi4_dht22_enclosure.scad
+openscad -o stl/lid_gauge.stl    -D 'part="lid_gauge"'    pi4_dht22_enclosure.scad
 ```
 
 `part` also accepts `"assembly"` — tray + ghosted Pi + lid + arm, a visual

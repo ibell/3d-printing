@@ -1,5 +1,27 @@
 # Build log
 
+## 2026-08-15 (night) — lid_gauge added; tray goes without a coupon
+
+Decided to skip further coupon work before the **tray**: its remaining unknowns are
+bridging over the socket bore and the vent slots, which no coupon predicts better than the
+tray itself, and the `fit_coupon` checks left (a plain tapered pip with 0.2 mm clearance,
+a hole pattern straight off the Pi drawing) are low risk.
+
+The **lid** is a different matter. Its snap is the **last sprung feature in the design, and
+sprung features are 0-for-2 here** — the cradle barb broke across its layer lines, the
+socket tabs fused — and the snap was flagged as firm (2.8 mm engaging skirt) when written
+but has never been tested in plastic.
+
+Useful sequencing: **the tray carries the ridges**, so it can be printed first and then used
+as the test fixture. Added `lid_gauge`: one segment of the +Y snap skirt, produced as an
+`intersection()` of `lid_assembled()` rather than re-modelled, so it cannot drift from the
+real lid. Verified — the band cut from the real lid and the gauge minus its foot are both
+584.00 mm³, difference 0.00. It is flipped exactly as `lid()` is, so the groove's overhang
+faces the way it will on the real part; printed in any other orientation it would predict
+nothing.
+
+0.78 cm³. Order is now: tray → lid_gauge (against the printed tray) → lid.
+
 ## 2026-08-15 (evening) — socket detent abandoned; back to a plain keyed fit
 
 Printed `socket_gauge`. **The arm would not enter at all.** Two independent causes:
