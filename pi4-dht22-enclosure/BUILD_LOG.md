@@ -40,8 +40,12 @@ Two test-harness lessons, both applied:
 - The gauge's back stop sat *inside* the bore, eating its first 2 mm, so it would have
   reported a shallower fit than the tray gives. Moved behind the socket.
 
-Next: reprint `socket_gauge` **as exported** and confirm the arm slides in and keys
-correctly. Then `fit_coupon`, then tray + lid.
+**Confirmed.** Reprinted `socket_gauge` as exported; the arm's tenon slides in and seats
+snugly. `socket_fit` = 0.4 mm is the right clearance for this printer, and the plain keyed
+friction fit is enough to hold the arm — no fastener needed after all. **The arm joint is
+done**, using the arm already printed.
+
+Next: `fit_coupon`, then tray + lid.
 
 ## 2026-08-15 (later still) — zero fasteners; two socket bugs caught before printing
 
