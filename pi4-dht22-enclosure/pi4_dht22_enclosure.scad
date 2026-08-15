@@ -22,7 +22,6 @@ snap_ridge_h = 0.8;   // how far the ridge protrudes out from the wall
 snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
 lid_clear   = 20.0;    // internal clear height above board top
 lid_wall    = 2.0;
-lid_lip     = 4.0;     // lip overlap depth
 lid_fit     = 0.3;     // lid-over-tray clearance
 
 /* ---------- snap-fit ridge/groove segments (shared by tray + lid) ----------
@@ -62,13 +61,17 @@ arm_h        = 6.0;
 arm_groove_w = 4.0;
 arm_groove_d = 2.5;
 arm_foot     = true;
-foot_len     = 16.0;
-foot_h       = 3.0;
+foot_len     = 16.0;   // desk-stand pad reach along the arm (X), behind the pocket
+foot_w       = 24.0;   // desk-stand pad width (Y) — broadens the footprint past arm_w
+foot_h       = 3.0;    // pad thickness; sits ABOVE the z=0 bottom plane (flat-printable)
 
 /* ---------- arm socket (tray, GPIO side) ---------- */
 socket_depth = 10.0;   // tenon length
 socket_fit   = 0.4;
 setscrew_d   = 3.2;
+key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key rib
+key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
+key_fit      = 0.4;    // rib-in-notch lateral clearance
 
 /* ---------- DHT22 module pocket (drop-in cavity) ---------- */
 sensor_pcb_w    = 37.0;   // module width  -> cavity X
@@ -81,9 +84,6 @@ sensor_grille_h = 7.0;
 cable_hole_w    = 8.0;
 cable_hole_h    = 4.0;
 lip_proud       = 0.8;    // retention lip overhang at mouth
-
-/* ---------- optional ---------- */
-wall_mount_tabs = false;
 
 /* ---------- global sanity asserts ---------- */
 assert(wall > 0 && floor > 0 && pocket_wall > 0, "thicknesses must be positive");
@@ -158,7 +158,6 @@ module sensor_pocket() {
 module sensor_gauge() { sensor_pocket(); }
 
 module arm() {
-    pocket_x = sensor_pcb_t + sensor_slot_fit + 2 * pocket_wall; // depth once rotated
     pocket_y = sensor_pcb_w + sensor_slot_fit + 2 * pocket_wall; // width once rotated
     span_end = socket_depth + arm_len;                          // where pocket begins
 
@@ -175,16 +174,27 @@ module arm() {
             cube([arm_len, arm_groove_w, arm_groove_d + 0.1]);
     }
 
+    // key rib on the TOP of the tenon, centred on the arm axis and running the
+    // full tenon length. It fills the socket's ceiling notch (tray_socket) so
+    // the tenon only inserts right-side-up; rolled 180 deg the rib points down,
+    // hits the (notch-less) bore floor, and the tenon won't seat. Rib is on the
+    // top face (positive Z) so the arm still prints flat with min z = 0.
+    translate([0, -(key_w - key_fit) / 2, arm_h - 0.01])
+        cube([socket_depth, key_w - key_fit, key_h + 0.01]);
+
     // pocket at the end, rotated so its +Y grille faces +X (outboard)
     translate([span_end, 0, 0])
         rotate([0, 0, -90])
             translate([-pocket_y / 2, 0, 0])   // recentre width on the arm axis
                 sensor_pocket();
 
-    // optional desk foot under the pocket end
+    // desk-stand base pad at the pocket end. Its UNDERSIDE is coplanar with the
+    // arm bar's underside (z=0), so the whole part rests flat on the bed and
+    // prints support-free; it broadens the footprint past arm_w for a stable
+    // stand when the arm sits decoupled on a desk.
     if (arm_foot)
-        translate([span_end - foot_len, -arm_w / 2, -foot_h])
-            cube([foot_len + pocket_x, arm_w, foot_h + 0.01]);
+        translate([span_end - foot_len, -foot_w / 2, 0])
+            cube([foot_len, foot_w, foot_h]);
 }
 
 module standoff() {
@@ -204,7 +214,10 @@ module standoff_field() {
 }
 
 module tray_socket() {
-    // keyed rectangular socket protruding +Y on the GPIO wall; keyed by a notch
+    // keyed rectangular socket protruding +Y on the GPIO wall. The key is a
+    // notch cut UP into the bore ceiling; the arm tenon's top rib seats in it,
+    // so the tenon can only enter right-side-up (a 180 deg roll puts the rib on
+    // the notch-less floor and blocks insertion).
     sx = arm_w + socket_fit;
     sz = arm_h + socket_fit;
     difference() {
@@ -212,7 +225,10 @@ module tray_socket() {
         translate([wall, -0.1, wall]) cube([sx, socket_depth + 0.1, sz]);      // tenon bore
         translate([wall + sx / 2, socket_depth / 2, sz + wall])                 // set screw
             cylinder(h = wall + 0.2, d = setscrew_d);
-        translate([wall + sx / 2 - 1, -0.1, wall]) cube([2, socket_depth, 1.5]); // key notch
+        // key notch: channel up into the bore ceiling, centred on the bore,
+        // running the full tenon depth; mates the arm tenon's top key rib.
+        translate([wall + sx / 2 - key_w / 2, -0.1, wall + sz - 0.01])
+            cube([key_w, socket_depth + 0.1, key_h + 0.01]);
     }
 }
 

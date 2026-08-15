@@ -108,7 +108,7 @@ the SD short edge (carrying the SD notch).
 The microSD sits on the **underside** of the short edge opposite Ethernet and protrudes
 past the board edge. A **notch** in that short wall, aligned to the card and sitting at
 the standoff-lifted card height, lets the card be pushed/pulled without opening the lid.
-Parameters `sd_slot_w`, `sd_slot_z`, `sd_slot_h` place and size it.
+Parameters `sd_slot_w`, `sd_slot_h` size it; its z is computed from `standoff_h`.
 
 ### LED window
 
@@ -135,9 +135,10 @@ is **10 × 6 mm**, printed flat so its length runs along the bed for bending str
 
 ### Optional desk foot
 
-`arm_foot = true` adds a small foot at the sensor end so the arm can alternatively stand
-on the desk beside the box, fully mechanically and thermally decoupled from it. It is a
-step feature on one face and still prints flat with no supports.
+`arm_foot = true` adds a base pad at the sensor end so the arm can alternatively stand
+on the desk beside the box, fully mechanically and thermally decoupled from it. The pad
+broadens the footprint past `arm_w` for stability; its underside is coplanar with the arm
+bar's bottom (z = 0), so the whole part rests flat on the bed and prints with no supports.
 
 ## 5. Parts (intended)
 
@@ -228,20 +229,20 @@ openscad -o stl/arm.stl  -D 'part="arm"'  pi4_dht22_enclosure.scad
 
 ```
 board_w, board_l, pcb_t          Pi 4 outline and thickness
-hole_dx, hole_dy, hole_dia       58 x 49 mount pattern; pilot Ø for M2.5
+hole_dx, hole_dy, hole_pilot_d   58 x 49 mount pattern; pilot Ø for M2.5
 standoff_h, standoff_od          post height and diameter
 wall, floor, board_fit           shell thicknesses and board clearance
 snap_ridge_h, snap_ridge_z,      lid snap-fit ridge/groove
   snap_seg_x, snap_seg_y
-vent_slot_w, vent_slot_gap       top ventilation grid
-sd_slot_w, sd_slot_z, sd_slot_h  microSD access notch
-led_win_x, led_win_w, led_win_h  LED window at the USB-C corner
+vent_slot_w, vent_gap            top ventilation grid
+sd_slot_w, sd_slot_h             microSD access notch (z computed from standoff_h)
+led_win_w, led_win_h             LED window at the USB-C corner (x hardcoded)
 cable_slot_w, cable_slot_h       DHT22 cable exit on the GPIO edge
 arm_len, arm_w, arm_h            sensor arm reach and cross-section
-arm_socket_*, arm_setscrew       keyed plug socket + M3 set screw
+socket_depth, socket_fit,        keyed plug socket + M3 set screw
+  setscrew_d, key_w, key_h       socket ceiling notch keyed to the tenon rib
 arm_foot (bool)                  optional desk-standing foot
 sensor_pcb_w, sensor_pcb_h,      DHT22 module pocket — MEASURE yours
   sensor_pcb_t, sensor_slot_fit
 sensor_grille_w, sensor_grille_h front airflow opening
-wall_mount_tabs (bool)           optional rear screw tabs (default off)
 ```

@@ -12,6 +12,8 @@ def main():
     ap.add_argument("--tol", type=float, default=1.0)
     ap.add_argument("--min-vol", type=float, default=0.0)
     ap.add_argument("--watertight", action="store_true")
+    ap.add_argument("--min-z", type=float, default=None,
+                    help="assert the mesh's minimum Z equals this value (within --tol)")
     a = ap.parse_args()
 
     m = trimesh.load(a.stl, force="mesh")
@@ -27,6 +29,11 @@ def main():
     if a.watertight and not m.is_watertight:
         print("FAIL: not watertight")
         ok = False
+    if a.min_z is not None:
+        got = m.bounds[0][2]
+        if abs(got - a.min_z) > a.tol:
+            print(f"FAIL: min z {got:.3f} != {a.min_z} (+/-{a.tol})")
+            ok = False
     if a.bbox:
         for name, got, exp in zip("XYZ", m.extents, a.bbox):
             if abs(got - exp) > a.tol:
