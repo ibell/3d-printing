@@ -488,7 +488,12 @@ module fit_coupon() {
     union() {
         cube([cx, cy, floor]);                                  // tile
         cube([wall, cy, floor + tray_wall_h]);                  // one walled edge (SD/GPIO-like)
-        translate([wall + hole_edge, hole_edge, floor]) standoff();   // one standoff corner
+        // one standoff corner, at the SAME offset the tray uses. Omitting
+        // board_fit here (as an earlier version did) put the standoff 0.4 mm
+        // closer to the wall than the tray does, so the coupon tested a
+        // zero-clearance board edge -- conservative, but not what gets printed.
+        translate([wall + board_fit + hole_edge, board_fit + hole_edge, floor])
+            standoff();
         // stub of the open-channel edge: a 2 mm-tall lip only, so a port stack clears above it
         translate([0, cy - wall, 0]) cube([cx, wall, floor + 2]);
     }
