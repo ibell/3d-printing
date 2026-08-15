@@ -1,5 +1,27 @@
 # Build log
 
+## 2026-08-15 (night, later) — fit_coupon passes: the Pi-side interface is confirmed
+
+Printed `fit_coupon` and checked it against the real Pi 4. **Go.** The locating pip enters
+the mounting hole with the intended play, the board sits flat on the Ø6 collar, and the
+board edge clears the SD-side wall.
+
+Worth recording *which* corner this tests: the coupon represents the corner where the
+**microSD short edge (walled)** meets the **A/V long edge (open channel)** — the only corner
+where a walled edge meets an open one, and so the only one with anything to check. The other
+three are either fully open or repeat the same wall clearance.
+
+Note the coupon on the bench is the pre-`board_fit` version, whose standoff sits 0.4 mm
+closer to the wall than the tray's. It therefore tested a *zero-clearance* board edge and
+still passed, which makes the tray's 0.4 mm strictly easier.
+
+Added `docs/renders/pi4-on-coupon-{apart,seated}.png` and
+`docs/renders/cradle-board-{apart,seated}.png`. Connector positions in the Pi model are
+**schematic** — only the 85 × 56 outline and the 58 × 49 hole pattern are to spec, and those
+are the only things the coupon tests.
+
+Still open: the lid snap. `lid_gauge` needs pressing onto the printed tray's ridge.
+
 ## 2026-08-15 (night) — lid_gauge added; tray goes without a coupon
 
 Decided to skip further coupon work before the **tray**: its remaining unknowns are
