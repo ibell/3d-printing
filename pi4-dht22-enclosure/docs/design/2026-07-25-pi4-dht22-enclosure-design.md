@@ -42,24 +42,27 @@ design routes around that failure mode rather than chasing tolerances into it.
 
 ### DHT22 module (the sensor)
 
-A 3-pin breakout module: the AM2302/DHT22 sensor on a small PCB with a pull-up resistor
-and a 3-pin header. **These vary between sellers**, so every pocket dimension is a
-parameter with a measured default:
+Designed around the **DFRobot Gravity DHT22 (SEN0137)** — a flat PCB with the white
+sensor at one end and a 3-pin Gravity connector at the other, the cable exiting in the
+plane of the board. Dimensions are from the official DFRobot drawing:
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `sensor_pcb_w` | 37.0 mm | module width (cavity width) |
-| `sensor_pcb_h` | 10.0 mm | module height / drop-in depth of the cavity |
-| `sensor_pcb_t` | 10.0 mm | module thickness (cavity depth into the arm face) |
-| `sensor_slot_fit` | 0.2 mm | added on each cavity dimension so the module drops in |
-| `sensor_grille_w/h` | sized to clear the white sensor body | front opening for airflow |
+| `board_len` | 41.52 mm | PCB length (connector end → sensor end) |
+| `board_wid` | 22.0 mm | PCB width |
+| `board_thk` | 1.6 mm | PCB thickness (assumed standard; confirm) |
+| `mnt_dx` | 15.0 mm | mounting-hole spacing (centre-to-centre) |
+| `mnt_from_bot` | 10.91 mm | hole centres, from the connector (bottom) edge |
+| `mnt_hole_d` | 3.0 mm | board mounting-hole diameter (M3 assumed) |
 
-**The pocket is a drop-in cavity, not an edge slot.** At 10 mm thick the module is a
-chunky strip, so the pocket is a rectangular box of `sensor_pcb_w × sensor_pcb_h ×
-sensor_pcb_t` (plus `sensor_slot_fit`) that the whole module drops into — grille facing
-out through the front `sensor_grille` opening, cable exiting the back into the arm
-groove. A pair of small retention lips at the mouth hold it seated. Measure your module
-with calipers and set `sensor_pcb_w/h/t`; nothing else needs to change.
+**The board mounts by its two holes onto snap-posts — not a drop-in pocket.** An earlier
+revision used a drop-in cavity sized to a chunky strip; the real SEN0137 is a flat board
+whose sensor is on its *face* and whose cable exits its *end*, so it is held instead by
+two split snap-posts on its mounting-hole pattern (see §4). The board pushes on and
+clicks under a barb; its sensor end **cantilevers off the pad into free air** — maximum
+airflow, the whole point of the arm — and the cable exits the bottom into the arm groove.
+`board_lift` raises the board off the pad so air passes underneath too. For a different
+module, measure it and set `board_len/wid/thk`, `mnt_dx`, `mnt_from_bot`, `mnt_hole_d`.
 
 ## 3. Architecture — three parts
 
@@ -67,7 +70,7 @@ with calipers and set `sensor_pcb_w/h/t`; nothing else needs to change.
 |---|---|
 | **Base tray** | Holds the Pi on four printed standoffs. Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray. |
-| **Sensor arm** | Plugs into the tray socket, routes the DHT22 cable in a groove, ends in a vented sensor pocket. Includes an optional desk foot. |
+| **Sensor arm** | Plugs into the tray socket, routes the DHT22 cable in a groove, and ends in a two-post snap cradle; the DHT22 board mounts by its holes with the sensor cantilevered into free air. |
 
 The arm is a **separate part**, not integral to the box, for three reasons: it prints
 flat and strong along its length; the thin plug joint is a poor heat conductor, so the
@@ -123,7 +126,7 @@ The DHT22 plugs onto the GPIO header on the walled long edge. A **cable-exit slo
 that wall passes the three wires out to a **keyed rectangular socket** in the tray corner
 nearest the GPIO exit. The socket takes the arm's plug tenon and is secured by one M3 set
 screw. Keying fixes the arm's orientation so the sensor always points the intended way.
-The path is deliberately short: GPIO → exit slot → arm cable groove → pocket.
+The path is deliberately short: GPIO → exit slot → arm cable groove → cradle.
 
 ### Sensor placement — off the plume, not just off the box
 
@@ -133,12 +136,19 @@ than above it keeps it out of that rising column. `arm_len` = **80 mm** default 
 (≈ 3 in) balances thermal isolation against cantilever stiffness. The arm cross-section
 is **10 × 6 mm**, printed flat so its length runs along the bed for bending strength.
 
-### Optional desk foot
+### Snap-post sensor cradle
 
-`arm_foot = true` adds a base pad at the sensor end so the arm can alternatively stand
-on the desk beside the box, fully mechanically and thermally decoupled from it. The pad
-broadens the footprint past `arm_w` for stability; its underside is coplanar with the arm
-bar's bottom (z = 0), so the whole part rests flat on the bed and prints with no supports.
+The DHT22 board is held at the arm's far end by a pad carrying **two split snap-posts** on
+the board's own mounting-hole pattern (`mnt_dx` apart, `mnt_from_bot` from the connector
+edge). Each post is a support collar (height `board_lift`, so the board sits proud of the
+pad for airflow), a slotted shaft through the Ø`mnt_hole_d` hole, and a chamfered barb that
+snaps over the top. The central slot splits the shaft into two prongs that flex together as
+the board is pushed on, then spring back under the barb — a tool-free click, matching the
+snap-fit lid. The pad only underlies the board's **connector end**; the **sensor end
+cantilevers past it into open air**. The pad height equals `arm_h`, so it fuses flush with
+the bar top and the whole arm prints flat, support-free. Snap force tunes via `post_barb_d`,
+`post_slot_w`, and `post_fit`; the `sensor_gauge` test print is the cradle alone, for
+dialing this in before printing the full arm.
 
 ## 5. Parts (intended)
 
@@ -148,7 +158,7 @@ Dimensions are the design intent; the SCAD is authoritative once modeled.
 |---|---|---|---|
 | Base tray | ~89 × 60 mm | walls 2 mm, floor 2 mm, standoffs 5 mm | 1 |
 | Lid | ~89 × 60 mm | ~20 mm internal clear height over the board | 1 |
-| Sensor arm | ~90 × 10 mm | 80 mm reach + plug tenon, groove, pocket, optional foot | 1 |
+| Sensor arm | ~106 × 26 mm | 80 mm reach + plug tenon, groove, snap-post cradle | 1 |
 
 Fit clearance around the board is `board_fit` = 0.4 mm. Lid-to-tray is a snap-fit joint:
 ridge/groove segments on the two walled sides (x-min/SD and +Y/GPIO), flanking the SD
@@ -157,13 +167,14 @@ notch and the arm socket, rather than screws into corner bosses.
 ## 6. Test parts (fit-check ladder)
 
 Cheap prints that each rule out one failure before committing to the ~full set. Selected
-via `part=`. **Ordered by uncertainty: the sensor pocket goes first**, because its
-dimensions were just measured off the actual module and are the values most likely to
-need a tweak — cheapest thing to get wrong, so prove it first.
+via `part=`. **Ordered by uncertainty: the sensor cradle goes first**, because the
+snap-post fit is the newest, never-printed feature and the most likely to need a tweak —
+cheapest thing to get wrong, so prove it first.
 
-1. **`sensor_gauge`** — just the arm's pocket (the "breakout box"), to check the DHT22
-   module seats with a firm grip after you have set `sensor_pcb_*`. Print this **before
-   anything else**; it validates the freshest, least-certain interface for a few grams.
+1. **`sensor_gauge`** — the cradle alone (pad + two snap-posts, the same ones the arm
+   uses). Push your DHT22 onto it and confirm a firm click **before** printing the full
+   arm; tune `post_barb_d` / `post_slot_w` / `post_fit` if the snap is too stiff or loose.
+   A few grams versus reprinting a 100 mm arm.
 2. **`fit_coupon`** — a small tile carrying **one corner of the standoff pattern plus one
    adjacent port-channel edge**. Verifies the two Pi-side things that actually have to be
    right: the M2.5 pilot fit and hole-to-edge spacing, and that a real Pi's port stack
@@ -239,10 +250,13 @@ sd_slot_w, sd_slot_h             microSD access notch (z computed from standoff_
 led_win_w, led_win_h             LED window at the USB-C corner (x hardcoded)
 cable_slot_w, cable_slot_h       DHT22 cable exit on the GPIO edge
 arm_len, arm_w, arm_h            sensor arm reach and cross-section
+arm_groove_w, arm_groove_d       cable groove along the arm top
 socket_depth, socket_fit,        keyed plug socket + M3 set screw
   setscrew_d, key_w, key_h       socket ceiling notch keyed to the tenon rib
-arm_foot (bool)                  optional desk-standing foot
-sensor_pcb_w, sensor_pcb_h,      DHT22 module pocket — MEASURE yours
-  sensor_pcb_t, sensor_slot_fit
-sensor_grille_w, sensor_grille_h front airflow opening
+board_len, board_wid, board_thk  DHT22 (SEN0137) board — MEASURE yours
+mnt_dx, mnt_from_bot, mnt_hole_d board mounting-hole pattern
+grip_len, board_lift             cradle pad reach; board airflow lift
+post_shaft_d, post_barb_d,       snap-post: shaft/barb/slot + seat clearance
+  post_barb_h, post_slot_w, post_fit
+cradle_gauge_t                   pad thickness for the sensor_gauge test print
 ```

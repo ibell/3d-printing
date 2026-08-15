@@ -60,10 +60,6 @@ arm_w        = 10.0;
 arm_h        = 6.0;
 arm_groove_w = 4.0;
 arm_groove_d = 2.5;
-arm_foot     = true;
-foot_len     = 16.0;   // desk-stand pad reach along the arm (X), behind the pocket
-foot_w       = 24.0;   // desk-stand pad width (Y) — broadens the footprint past arm_w
-foot_h       = 3.0;    // pad thickness; sits ABOVE the z=0 bottom plane (flat-printable)
 
 /* ---------- arm socket (tray, GPIO side) ---------- */
 socket_depth = 10.0;   // tenon length
@@ -73,21 +69,29 @@ key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key ri
 key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
 key_fit      = 0.4;    // rib-in-notch lateral clearance
 
-/* ---------- DHT22 module pocket (drop-in cavity) ---------- */
-sensor_pcb_w    = 37.0;   // module width  -> cavity X
-sensor_pcb_h    = 10.0;   // drop-in depth -> cavity Z
-sensor_pcb_t    = 10.0;   // module thick  -> cavity Y (into front face)
-sensor_slot_fit = 0.2;
-pocket_wall     = 2.0;
-sensor_grille_w = 30.0;   // front airflow window
-sensor_grille_h = 7.0;
-cable_hole_w    = 8.0;
-cable_hole_h    = 4.0;
-lip_proud       = 0.8;    // retention lip overhang at mouth
+/* ---------- DHT22 sensor board + snap-post cradle (DFRobot SEN0137) ---------- */
+// Official SEN0137 drawing: 41.52 x 22.0 mm board, white sensor at the top,
+// two mounting holes 15.0 mm apart / 10.91 mm up from the bottom (connector) edge.
+board_len      = 41.52;  // PCB length: connector (bottom) end -> sensor (top) end
+board_wid      = 22.0;   // PCB width
+board_thk      = 1.6;    // PCB thickness (assumed standard; confirm with calipers)
+mnt_dx         = 15.0;   // mounting-hole spacing (centre-to-centre, across the width)
+mnt_from_bot   = 10.91;  // hole centres, measured from the connector/bottom edge
+mnt_hole_d     = 3.0;    // board mounting-hole diameter (M3 assumed)
+grip_len       = 16.0;   // cradle pad length under the board's bottom (grip) end
+board_lift     = 3.0;    // airflow gap: board sits this far above the pad
+cradle_gauge_t = 3.0;    // pad thickness for the standalone sensor_gauge test print
+post_shaft_d   = 2.6;    // snap-post shaft dia (clears the 3.0 hole)
+post_barb_d    = 3.4;    // barb outer dia (> hole -> retains the board)
+post_barb_h    = 1.4;    // barb height (chamfered lead-in cone)
+post_slot_w    = 1.0;    // central flex slot: splits each post into two prongs
+post_fit       = 0.15;   // vertical clearance so the board seats under the barb
 
 /* ---------- global sanity asserts ---------- */
-assert(wall > 0 && floor > 0 && pocket_wall > 0, "thicknesses must be positive");
-assert(board_fit >= 0 && sensor_slot_fit >= 0, "fits must be non-negative");
+assert(wall > 0 && floor > 0, "thicknesses must be positive");
+assert(board_fit >= 0 && post_fit >= 0, "fits must be non-negative");
+assert(post_barb_d > mnt_hole_d && post_shaft_d < mnt_hole_d,
+       "snap post must clear the board hole yet retain it");
 
 /* ---------- dispatcher ---------- */
 if      (part == "_smoke")       cube(10);
@@ -99,67 +103,47 @@ else if (part == "fit_coupon")   fit_coupon();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
-module sensor_pocket() {
-    cav_x = sensor_pcb_w + sensor_slot_fit;   // width
-    cav_y = sensor_pcb_t + sensor_slot_fit;   // thickness (into +Y face)
-    cav_z = sensor_pcb_h + sensor_slot_fit;   // drop-in depth
-    out_x = cav_x + 2 * pocket_wall;
-    out_y = cav_y + 2 * pocket_wall;
-    out_z = cav_z + pocket_wall;              // floor only; mouth open at top
-
-    assert(pocket_wall > 0, "pocket_wall must be positive");
-    assert(sensor_grille_w <= cav_x, "grille wider than cavity");
-    assert(sensor_grille_h <= cav_z, "grille taller than cavity");
-
+// One split snap-post at the local origin, rising in +Z from z=0.
+// A support collar lifts the board for airflow; a slotted shaft passes through
+// the board's mounting hole and a chamfered barb snaps over the top to retain
+// it. The central slot splits the shaft into two prongs that flex together as
+// the board is pushed on, then spring back under the barb.
+module snap_post() {
+    // support collar (board rests on this -> airflow gap underneath)
+    cylinder(d = post_shaft_d + 2.4, h = board_lift);
     difference() {
-        // outer block
-        cube([out_x, out_y, out_z]);
-        // cavity (open top = mouth for drop-in)
-        translate([pocket_wall, pocket_wall, pocket_wall])
-            cube([cav_x, cav_y, cav_z + 0.1]);
-        // grille window in +Y face
-        translate([(out_x - sensor_grille_w) / 2, out_y - pocket_wall - 0.1,
-                   pocket_wall + (cav_z - sensor_grille_h) / 2])
-            cube([sensor_grille_w, pocket_wall + 0.2, sensor_grille_h]);
-        // cable hole in -Y face
-        translate([(out_x - cable_hole_w) / 2, -0.1,
-                   pocket_wall + (cav_z - cable_hole_h) / 2])
-            cube([cable_hole_w, pocket_wall + 0.2, cable_hole_h]);
-    }
-    // two retention lips, rooted in the X-end walls (x in [0,pocket_wall] and
-    // x in [out_x-pocket_wall,out_x]). Each lip is the convex hull of a "back"
-    // sliver flush against the wall's inner face (a full shared face with the
-    // solid wall, from z=out_z-lip_proud to z=out_z) and a "tip" sliver
-    // protruding inward by lip_proud right at the mouth (z=out_z). The hull
-    // between them gives a ~45 deg chamfered underside, so the lip overhangs
-    // the cavity mouth (catching the top edge of the dropped-in module)
-    // without needing print support. Neither sliver rises above out_z, so the
-    // block's overall height is unchanged.
-    lip_len = cav_y * 0.6;                       // span along Y, centred in cavity
-    lip_y0  = pocket_wall + (cav_y - lip_len) / 2;
-    lip_eps = 0.01;                               // sliver thickness, for hull()
-
-    // left lip, on the x=0..pocket_wall wall, overhanging in +x
-    hull() {
-        translate([pocket_wall, lip_y0, out_z - lip_proud])
-            cube([lip_eps, lip_len, lip_proud]);
-        translate([pocket_wall + lip_proud - lip_eps, lip_y0, out_z - lip_eps])
-            cube([lip_eps, lip_len, lip_eps]);
-    }
-    // right lip, on the out_x-pocket_wall..out_x wall, overhanging in -x
-    hull() {
-        translate([out_x - pocket_wall - lip_eps, lip_y0, out_z - lip_proud])
-            cube([lip_eps, lip_len, lip_proud]);
-        translate([out_x - pocket_wall - lip_proud, lip_y0, out_z - lip_eps])
-            cube([lip_eps, lip_len, lip_eps]);
+        union() {
+            translate([0, 0, board_lift])
+                cylinder(d = post_shaft_d, h = board_thk + post_fit);
+            // barb: cone from full width (flat retaining underside) to a point
+            translate([0, 0, board_lift + board_thk + post_fit])
+                cylinder(d1 = post_barb_d, d2 = 1.0, h = post_barb_h);
+        }
+        // flex slot across the shaft + barb (not the collar)
+        translate([-post_slot_w / 2, -(post_barb_d / 2 + 0.5), board_lift - 0.01])
+            cube([post_slot_w, post_barb_d + 1,
+                  board_thk + post_fit + post_barb_h + 0.1]);
     }
 }
 
-module sensor_gauge() { sensor_pocket(); }
+// Snap-post cradle: a pad under the board's bottom (connector) end carrying two
+// snap posts on the SEN0137 hole pattern. The board mounts flat with its sensor
+// end cantilevered off the +X end into free air; the cable exits the bottom
+// (near local x=0) and drops to the arm's groove. `pad_h` sets the pad height so
+// the same cradle serves the low standalone gauge and the arm-height version.
+// Local frame: board bottom edge at x=0, board runs +X, width centred on Y.
+module sensor_cradle(pad_h) {
+    m = 2;                                    // pad margin around the board width
+    translate([-6, -(board_wid / 2 + m), 0])
+        cube([grip_len + 6, board_wid + 2 * m, pad_h]);
+    for (sy = [-mnt_dx / 2, mnt_dx / 2])
+        translate([mnt_from_bot, sy, pad_h]) snap_post();
+}
+
+module sensor_gauge() { sensor_cradle(cradle_gauge_t); }
 
 module arm() {
-    pocket_y = sensor_pcb_w + sensor_slot_fit + 2 * pocket_wall; // width once rotated
-    span_end = socket_depth + arm_len;                          // where pocket begins
+    span_end = socket_depth + arm_len;      // where the cradle joins the bar
 
     assert(arm_len >= 50, "arm_len below 50 mm defeats thermal isolation");
 
@@ -182,19 +166,11 @@ module arm() {
     translate([0, -(key_w - key_fit) / 2, arm_h - 0.01])
         cube([socket_depth, key_w - key_fit, key_h + 0.01]);
 
-    // pocket at the end, rotated so its +Y grille faces +X (outboard)
-    translate([span_end, 0, 0])
-        rotate([0, 0, -90])
-            translate([-pocket_y / 2, 0, 0])   // recentre width on the arm axis
-                sensor_pocket();
-
-    // desk-stand base pad at the pocket end. Its UNDERSIDE is coplanar with the
-    // arm bar's underside (z=0), so the whole part rests flat on the bed and
-    // prints support-free; it broadens the footprint past arm_w for a stable
-    // stand when the arm sits decoupled on a desk.
-    if (arm_foot)
-        translate([span_end - foot_len, -foot_w / 2, 0])
-            cube([foot_len, foot_w, foot_h]);
+    // snap-post cradle at the end. The cradle's local +X (board length) already
+    // aligns with the arm axis, so no rotation: the board's bottom (connector)
+    // end sits over the bar end and the sensor end cantilevers +X into free air.
+    // pad_h = arm_h so the pad fuses flush with the bar top and prints flat.
+    translate([span_end, 0, 0]) sensor_cradle(arm_h);
 }
 
 module standoff() {

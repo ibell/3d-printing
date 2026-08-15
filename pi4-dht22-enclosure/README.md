@@ -7,11 +7,15 @@ plume. Prints flat, no supports; PETG recommended.
 Model: `pi4_dht22_enclosure.scad`. Design record: `docs/design/`. Renders:
 `docs/renders/`.
 
-## The DHT22 module — measure yours first
+## The DHT22 module — DFRobot Gravity DHT22 (SEN0137)
 
-The sensor pocket is a drop-in cavity, not an edge slot. Modules vary between
-sellers, so measure your board and set `sensor_pcb_w` / `sensor_pcb_h` /
-`sensor_pcb_t` at the top of the SCAD. Defaults are 37 × 10 × 10 mm.
+Designed around the **DFRobot Gravity DHT22 (SEN0137)**: a flat 41.52 × 22.0 mm
+board with the sensor at one end and a 3-pin Gravity connector at the other. It
+mounts by its **two holes** (15.0 mm apart, 10.91 mm from the connector edge)
+onto snap-posts at the arm's end — the sensor cantilevers into free air and the
+cable runs back down the arm. For a different board, measure it and set
+`board_len` / `board_wid` / `board_thk`, `mnt_dx`, `mnt_from_bot`, `mnt_hole_d`
+at the top of the SCAD (Ø3.0 M3 holes / 1.6 mm PCB assumed).
 
 ## Parts
 
@@ -19,7 +23,7 @@ sellers, so measure your board and set `sensor_pcb_w` / `sensor_pcb_h` /
 |---|---|
 | **Tray** | Holds the Pi on four standoffs, secured with four M2.5 self-tapping screws. Carries the SD notch, DHT22 cable exit, floor vents, snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray — no lid screws. |
-| **Arm** | Plugs into the tray socket (held by one M3 set screw), routes the DHT22 cable in a groove, ends in the sensor pocket. Optional desk foot. |
+| **Arm** | Plugs into the tray socket (held by one M3 set screw), routes the DHT22 cable in a groove, and ends in a two-post snap cradle that the DHT22 board clicks onto — sensor cantilevered into free air. |
 
 Fasteners, in total: four M2.5 self-tapping screws (Pi-to-standoffs) and one
 M3 set screw (arm-in-socket). The lid takes none.
@@ -52,9 +56,10 @@ in plastic:
 
 ## Fit-test ladder (cheap prints, print in this order)
 
-1. `stl/sensor_gauge.stl` — the sensor pocket alone (the "breakout box").
-   **Print this first** and confirm the DHT22 module drops in with a firm grip
-   before anything else.
+1. `stl/sensor_gauge.stl` — the sensor cradle alone (pad + the two snap-posts).
+   **Print this first**, push your DHT22 board onto it, and confirm a firm click
+   before committing to the full arm. Tune `post_barb_d` / `post_slot_w` /
+   `post_fit` if the snap is too stiff or loose.
 2. `stl/fit_coupon.stl` — one standoff corner plus an open-channel edge.
    Confirms the M2.5 pilot fit and that the Pi's ports clear the open channel.
 3. `stl/tray.stl`, `stl/lid.stl`, `stl/arm.stl` — the production set.

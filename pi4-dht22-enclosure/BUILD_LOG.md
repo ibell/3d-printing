@@ -1,5 +1,25 @@
 # Build log
 
+## 2026-08-15 — sensor holder redesigned for the DFRobot SEN0137
+
+The DHT22 in hand is a **DFRobot Gravity DHT22 (SEN0137)** — a flat 41.52 × 22.0 mm
+board with the sensor on its face and a 3-pin Gravity cable off its end, not the
+chunky drop-in strip the original pocket assumed. Replaced the drop-in `sensor_pocket`
+with a **snap-post cradle**: a pad at the arm end carrying two split snap-posts on the
+board's own mounting-hole pattern (15.0 mm apart, 10.91 mm from the connector edge,
+Ø3.0/M3 assumed). The board clicks on tool-free; its sensor end cantilevers off the pad
+into free air and the cable exits back down the arm groove. Dimensions are from the
+official DFRobot drawing.
+
+`sensor_gauge` is now the cradle alone (pad + posts), still the first thing to print.
+`arm` is now ~106 × 26 mm (was ~104 × 41). All five parts still render single, watertight,
+min z = 0; `tests/check_all.sh` passes. The snap-post fit (`post_barb_d` / `post_slot_w` /
+`post_fit`, and the assumed Ø3.0 hole / 1.6 mm PCB) is new and unprinted — the reason to
+print the gauge first.
+
+Next: print `stl/sensor_gauge.stl`, snap the SEN0137 on, confirm a firm click; then
+`stl/fit_coupon.stl` against the real Pi; then the production `tray`, `lid`, `arm`.
+
 ## 2026-07-25 — model complete, unprinted
 
 Tray + snap-fit lid + DHT22 sensor arm modeled in `pi4_dht22_enclosure.scad`.
@@ -25,6 +45,5 @@ Two things worth flagging for anyone printing this before further tuning:
   snap, so the lid can lift slightly at that free corner. Acceptable for a
   stationary desk unit, not for anything that gets carried around or shipped.
 
-Next: print `stl/sensor_gauge.stl` first and confirm the DHT22 module
-(37 × 10 × 10 mm default) drops in with a firm grip; then `stl/fit_coupon.stl`
-against the real Pi; then the production `tray`, `lid`, and `arm`.
+(Superseded 2026-08-15 — the drop-in pocket assumed here was replaced by the
+SEN0137 snap-post cradle; see the entry above.)
