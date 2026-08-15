@@ -23,12 +23,16 @@ the arm groove. For a different board, measure it and set `board_len` /
 
 | Part | Role |
 |---|---|
-| **Tray** | Holds the Pi on four standoffs, secured with four M2.5 self-tapping screws. Carries the SD notch, DHT22 cable exit, floor vents, snap ridges, and the keyed arm socket. |
-| **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray — no lid screws. |
-| **Arm** | Plugs into the tray socket (held by one M3 set screw), routes the DHT22 cable in a groove, and ends in a two-post snap cradle that the DHT22 board clicks onto — sensor cantilevered into free air. |
+| **Tray** | Holds the Pi on four locating posts — no screws; the lid's pads press it down. Carries the SD notch, DHT22 cable exit, floor vents, snap ridges, and the keyed arm socket. |
+| **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray — no lid screws. Four underside pads clamp the Pi onto its standoffs. |
+| **Arm** | Plugs into the tray socket and clicks into a detent — no set screw. Routes the DHT22 cable in a groove and ends in a snap cradle (one post + two rails) that the DHT22 board clicks onto — sensor cantilevered into free air. |
 
-Fasteners, in total: four M2.5 self-tapping screws (Pi-to-standoffs) and one
-M3 set screw (arm-in-socket). The lid takes none.
+**Fasteners, in total: none.** The Pi sits on four locating posts and is clamped
+by pads under the lid, the lid snaps onto the tray, the arm clicks into its
+socket, and the DHT22 clicks onto the arm.
+
+Note the Pi is only held down **with the lid fitted** — with the lid off it is
+located but free to lift.
 
 ## The snap-fit lid
 
@@ -62,16 +66,21 @@ in plastic:
    **Print this first**, push your DHT22 board onto it, and confirm a firm click
    before committing to the full arm. Tune `post_barb_d` / `post_slot_w` /
    `post_fit` if the snap is too stiff or loose.
-2. `stl/fit_coupon.stl` — one standoff corner plus an open-channel edge.
-   Confirms the M2.5 pilot fit and that the Pi's ports clear the open channel.
-3. `stl/tray.stl`, `stl/lid.stl`, `stl/arm.stl` — the production set.
+2. `stl/fit_coupon.stl` — one standoff plus an open-channel edge. Confirms the
+   locating pip enters the Pi's hole at the right spacing and that its ports
+   clear the open channel.
+3. `stl/socket_gauge.stl` — the arm socket alone. Confirms the arm's detent
+   clicks before you commit to the long tray print.
+4. `stl/tray.stl`, `stl/lid.stl`, `stl/arm.stl` — the production set.
 
 ## Printing
 
-PETG, 0.2 mm layers, 3 perimeters, ~20% infill, no supports. All five parts
-render as single watertight bodies and pass `tests/check_geom.py`. STLs in
-`stl/` are pre-oriented (min Z = 0) — drop them straight into the slicer.
-Nothing has been printed in plastic yet; see `BUILD_LOG.md`.
+PETG, 0.2 mm layers, 3 perimeters, ~20% infill, no supports. All six parts
+render as single watertight bodies and pass `tests/check_all.sh`, which also
+checks that the parts actually assemble (no solid overlap) and that nothing
+overhangs unsupported. STLs in `stl/` are pre-oriented (min Z = 0) — drop them
+straight into the slicer. The cradle and arm are printed and confirmed; the
+tray, lid and coupons are not. See `BUILD_LOG.md`.
 
 ## Re-export
 
@@ -81,6 +90,7 @@ openscad -o stl/arm.stl          -D 'part="arm"'          pi4_dht22_enclosure.sc
 openscad -o stl/tray.stl         -D 'part="tray"'         pi4_dht22_enclosure.scad
 openscad -o stl/lid.stl          -D 'part="lid"'          pi4_dht22_enclosure.scad
 openscad -o stl/fit_coupon.stl   -D 'part="fit_coupon"'   pi4_dht22_enclosure.scad
+openscad -o stl/socket_gauge.stl -D 'part="socket_gauge"' pi4_dht22_enclosure.scad
 ```
 
 `part` also accepts `"assembly"` — tray + ghosted Pi + lid + arm, a visual

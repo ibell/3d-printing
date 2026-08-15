@@ -11,8 +11,9 @@ decisions and the reasoning behind them.
 A three-part 3D-printed desk enclosure for a Raspberry Pi 4 Model B running as a
 temperature-monitoring node, plus a plug-in arm that holds a DHT22 temperature/humidity
 module out in free air, away from the Pi's own heat. All three parts print flat with no
-supports and assemble by hand with four M2.5 screws (Pi to standoffs), one M3 set screw
-(arm in socket), and a snap-fit lid.
+supports and assemble **entirely by hand with no fasteners at all**: the Pi snaps onto
+four posts, the lid snaps onto the tray, the arm clicks into its socket, and the DHT22
+clicks onto the arm (see §11, 2026-08-15).
 
 The reason the sensor is on an arm at all is thermal: a DHT22 sitting on or inside a
 warm enclosure reads the box, not the room. The arm exists to move the sensor out of
@@ -69,9 +70,9 @@ too. For a different module, measure it and set `board_len/wid/thk`, `mnt_from_e
 
 | Part | Role |
 |---|---|
-| **Base tray** | Holds the Pi on four printed standoffs. Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid snap ridges, and the keyed arm socket. |
+| **Base tray** | Holds the Pi on four printed locating posts (the lid's pads clamp it down). Carries the SD-card notch, the DHT22 cable-exit slot, floor vents, the lid snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray. |
-| **Sensor arm** | Plugs into the tray socket, routes the DHT22 cable in a groove, and ends in a two-post snap cradle; the DHT22 board mounts by its holes with the sensor cantilevered into free air. |
+| **Sensor arm** | Plugs into the tray socket and clicks into a detent, routes the DHT22 cable in a groove, and ends in a snap cradle (one post + two anti-rotation rails); the DHT22 board clicks on with its sensor cantilevered into free air. |
 
 The arm is a **separate part**, not integral to the box, for three reasons: it prints
 flat and strong along its length; the thin plug joint is a poor heat conductor, so the
@@ -85,11 +86,29 @@ along the 56 mm edge, **z** up.
 
 ### Standoffs
 
-Four posts on the 58 × 49 mm pattern, **`standoff_h` = 5 mm** tall, **Ø6 mm**, with
-**Ø2.2 mm pilot holes** for M2.5 self-tapping screws. 5 mm lifts the board clear of its
-own through-hole solder tails and opens a floor-vent plenum under the SoC side of the
-board. Pilot (not clearance) holes let the screws self-tap into plastic — no nuts or
-heat-set inserts required, matching the "assemble by hand" goal.
+Four posts on the 58 × 49 mm pattern. The Ø6 mm × **`standoff_h` = 5 mm** collar is the
+seat the board lands on; 5 mm lifts the board clear of its own through-hole solder tails
+and opens a floor-vent plenum under the SoC side. On top of each collar sits a short
+**locating pip** (`pip_d` 2.5 mm) that enters the Pi's Ø2.7 mm hole. The pip is
+deliberately *shorter than the PCB is thick* (`pip_h` 0.9–1.2 mm), so it never stands proud
+of the board.
+
+**The pip only locates; it does not retain.** The board is held down by four tapered pads
+on the lid's underside, concentric with the standoffs, reaching `hold_preload` = 0.3 mm
+below the board's top face. The clamp path is pad → board → collar, so the Pi is pinched
+at four points with no bending moment, and each pad is bored (`hold_bore_d`) so it bears on
+the PCB rather than on the pip. Since the lid already snaps on, this retains the board with
+no fastener and, crucially, **nothing that has to flex.**
+
+**Why not snap posts.** A split-post barb was modeled for these standoffs and rejected after
+field evidence: the equivalent barb on the DHT22 cradle **snapped off after a single
+insertion** (2026-08-15). The cause is print orientation, not force — the post stands in Z,
+so its 0.875 mm prongs are stacks of layers, and flexing them sideways loads the bond
+*between* layers, the weakest direction in an FDM part. Four such posts would be worse than
+one: they must all flex simultaneously against a rigid PCB, so force per post is higher,
+and one broken barb of four leaves the board loose. The tradeoff of the pad approach is
+that the Pi is only captive with the lid on — acceptable, and far better than a mount that
+can shed a barb.
 
 ### Open port channels, not cutouts
 
@@ -125,8 +144,13 @@ opening, which cannot mis-register the way a printed pipe can.
 
 The DHT22 plugs onto the GPIO header on the walled long edge. A **cable-exit slot** in
 that wall passes the three wires out to a **keyed rectangular socket** in the tray corner
-nearest the GPIO exit. The socket takes the arm's plug tenon and is secured by one M3 set
-screw. Keying fixes the arm's orientation so the sensor always points the intended way.
+nearest the GPIO exit. The socket takes the arm's plug tenon and is secured by a **rounded
+detent**: each socket side wall is freed into a cantilever tab carrying a bump that drops
+into a matching vertical groove in the tenon. The tenon is otherwise full-section and keeps
+its key rib, so the joint's lateral and roll stiffness are what the set-screw version had —
+only the axial lock became a click. Round bumps mean the arm is hand-removable, which suits
+a part you may want to reposition; the Pi's barbs are deliberately less forgiving.
+Keying fixes the arm's orientation so the sensor always points the intended way.
 The path is deliberately short: GPIO → exit slot → arm cable groove → cradle.
 
 ### Sensor placement — off the plume, not just off the box
@@ -189,9 +213,11 @@ cheapest thing to get wrong, so prove it first.
    The first gauge print (2026-08-15) is exactly what caught the wrong board assumption.
 2. **`fit_coupon`** — a small tile carrying **one corner of the standoff pattern plus one
    adjacent port-channel edge**. Verifies the two Pi-side things that actually have to be
-   right: the M2.5 pilot fit and hole-to-edge spacing, and that a real Pi's port stack
-   clears the open channel.
-3. Then the production `tray`, `lid`, and `arm`.
+   right: that the locating pip enters the Pi's hole at the correct hole-to-edge spacing,
+   and that a real Pi's port stack clears the open channel.
+3. **`socket_gauge`** — the arm socket alone, on a small pad. Proves the arm's detent
+   against the already-printed arm for a few grams, rather than after an 8-hour tray.
+4. Then the production `tray`, `lid`, and `arm`.
 
 ## 7. Printing
 
@@ -229,7 +255,7 @@ openscad -o stl/arm.stl  -D 'part="arm"'  pi4_dht22_enclosure.scad
 - **Port positions are assumed, not measured.** This is safe *because* the channels are
   open — but it means a differently-portioned board (a Pi 5, say) is not covered without
   re-checking which edges carry which ports.
-- **Standoff pilot holes self-tap into plastic.** Good for a few assembly cycles; not for
+- **The Pi is only clamped with the lid fitted.** With the lid off the board is located but not held down; not for
   repeated re-opening. Switch to heat-set inserts if the lid will come off often.
 - **Untested in plastic.** Every dimension here is calculated or taken from the Pi 4
   mechanical drawing; none of it has been printed yet.
@@ -252,8 +278,12 @@ openscad -o stl/arm.stl  -D 'part="arm"'  pi4_dht22_enclosure.scad
 
 ```
 board_w, board_l, pcb_t          Pi 4 outline and thickness
-hole_dx, hole_dy, hole_pilot_d   58 x 49 mount pattern; pilot Ø for M2.5
-standoff_h, standoff_od          post height and diameter
+hole_dx, hole_dy, pi_hole_d      58 x 49 mount pattern; Pi's board hole Ø
+standoff_h, standoff_od          standoff collar height and diameter
+pip_d, pip_h                     locating pip entering the Pi's hole
+hold_d, hold_base_d,             lid hold-down pads: contact/base Ø, preload
+  hold_preload, hold_bore_d,     and the bore that clears the pip
+  hold_bore_h
 wall, floor, board_fit           shell thicknesses and board clearance
 snap_ridge_h, snap_ridge_z,      lid snap-fit ridge/groove
   snap_seg_x, snap_seg_y
@@ -263,8 +293,11 @@ led_win_w, led_win_h             LED window at the USB-C corner (x hardcoded)
 cable_slot_w, cable_slot_h       DHT22 cable exit on the GPIO edge
 arm_len, arm_w, arm_h            sensor arm reach and cross-section
 arm_groove_w, arm_groove_d       cable groove along the arm top
-socket_depth, socket_fit,        keyed plug socket + M3 set screw
-  setscrew_d, key_w, key_h       socket ceiling notch keyed to the tenon rib
+socket_depth, socket_fit,        keyed plug socket + detent
+  key_w, key_h, key_fit          socket ceiling notch keyed to the tenon rib
+tab_len, tab_slot                cantilever tab freed in each socket side wall
+bump_d, bump_proud, bump_at,     detent bump and its mating tenon groove
+  bump_fit, bump_off
 board_len, board_wid, board_thk  DHT22 breakout board — MEASURE yours
 mnt_from_end, mnt_hole_d         single mounting hole: position and diameter
 grip_len, board_lift             cradle pad/rail reach; board airflow lift

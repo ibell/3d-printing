@@ -11,7 +11,7 @@ pcb_t        = 1.4;
 hole_dx      = 58.0;   // mount rectangle along X
 hole_dy      = 49.0;   // mount rectangle along Y
 hole_edge    = 3.5;    // hole-centre inset from board edge
-hole_pilot_d = 2.2;    // M2.5 self-tap pilot
+pi_hole_d    = 2.7;    // Pi 4 mounting-hole diameter (board side)
 
 /* ---------- shell ---------- */
 wall        = 2.0;
@@ -33,9 +33,27 @@ lid_fit     = 0.3;     // lid-over-tray clearance
 snap_seg_x = [[4, 16], [39, 16]];   // x-min wall, along y -> y[4,20] & y[39,55]
 snap_seg_y = [[6, 24], [56, 24]];   // +Y  wall, along x -> x[6,30] & x[56,80]
 
-/* ---------- standoffs ---------- */
-standoff_h  = 5.0;
-standoff_od = 6.0;
+/* ---------- standoffs (locating posts + lid hold-down -- no screws) ----------
+   NOT snap posts. A split-post barb was tried and broke off the DHT22 cradle
+   after ONE insertion (2026-08-15): the post prints standing in Z, so its
+   0.875 mm prongs are stacks of layers and flexing them sideways loads the
+   bond BETWEEN layers -- the weakest direction in an FDM part. Four of them
+   on a rigid PCB, all flexing at once, would be worse than one.
+   So nothing flexes here. A pip locates the board in X/Y, the collar carries
+   it in -Z, and pads under the lid press it in +Z. The lid already snaps, so
+   this still costs no fasteners. */
+standoff_h  = 5.0;     // collar height: board sits this far above the floor
+standoff_od = 6.0;     // collar diameter (the old screw-standoff footprint)
+pip_d       = 2.5;     // locating pip, 0.2 under pi_hole_d
+pip_h       = 1.2;     // stops just BELOW flush so a flat pad can bear on the PCB
+hold_d      = 6.0;     // lid pad contact Ø -- concentric with the standoff, so
+                       // the clamp is pad -> board -> collar with no bending
+hold_base_d = 8.0;     // pad Ø at the lid ceiling; tapers down for print stability.
+                       // Capped so the pads over the y=3.9 holes stay inside the
+                       // lid's open -Y edge instead of jutting past it.
+hold_preload = 0.3;    // pad reaches this far below board top, to guarantee contact
+hold_bore_d = 3.4;     // clearance bore in the pad face, so it bears on the PCB
+hold_bore_h = 1.5;     // and not on the locating pip poking up through the hole
 
 /* ---------- ventilation ---------- */
 vent_slot_w   = 3.0;
@@ -61,13 +79,27 @@ arm_h        = 6.0;
 arm_groove_w = 4.0;
 arm_groove_d = 2.5;
 
-/* ---------- arm socket (tray, GPIO side) ---------- */
+/* ---------- arm socket (tray, GPIO side) ----------
+   The tenon is a close sliding fit and keeps its key rib, so the joint's
+   lateral and roll stiffness are unchanged. Only the axial lock changed: the
+   M3 set screw is replaced by a rounded detent. Each socket side wall carries
+   a cantilever tab with a round bump that drops into a matching vertical
+   groove in the tenon -- a firm click that is still hand-removable, which the
+   arm wants and the Pi does not. */
 socket_depth = 10.0;   // tenon length
 socket_fit   = 0.4;
-setscrew_d   = 3.2;
 key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key rib
 key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
 key_fit      = 0.4;    // rib-in-notch lateral clearance
+tab_len      = 7.0;    // cantilever tab length; rooted inboard, free at the mouth
+tab_slot     = 1.0;    // slot width above and below the tab, freeing it to flex
+bump_d       = 2.4;    // detent bump diameter (vertical cylinder)
+bump_proud   = 0.45;   // how far the bump protrudes into the bore
+bump_at      = 7.5;    // bump centre, from the bore's inner (blind) end
+bump_fit     = 0.1;    // groove-over-bump clearance
+// how far the bump centre sits outside the tenon face; the bump therefore
+// penetrates the tenon by bump_d/2 - bump_off, and the groove need be no deeper
+bump_off     = bump_d / 2 - bump_proud - socket_fit / 2;
 
 /* ---------- DHT22 sensor board + snap-post cradle ---------- */
 // Measured off the board in hand (2026-08-15): 29.52 x 13.0 mm, ONE mounting
@@ -106,6 +138,7 @@ else if (part == "arm")          arm();
 else if (part == "tray")         tray();
 else if (part == "lid")          lid();
 else if (part == "fit_coupon")   fit_coupon();
+else if (part == "socket_gauge") socket_gauge();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
@@ -114,21 +147,33 @@ else echo(str("unknown part: ", part));
 // the board's mounting hole and a chamfered barb snaps over the top to retain
 // it. The central slot splits the post into two prongs that flex together as
 // the board is pushed on, then spring back under the barb.
-module snap_post() {
+// shaft_d/barb_d size the snap to the board's hole; collar_d/collar_h set the
+// support the board rests on; thk is the board thickness the barb must clear.
+// Defaults reproduce the DHT22 cradle exactly, so that (printed and validated)
+// geometry is untouched by the Pi standoffs reusing this module.
+module snap_post(shaft_d   = post_shaft_d,
+                 barb_d    = post_barb_d,
+                 collar_d  = post_shaft_d + 2.4,
+                 collar_h  = board_lift,
+                 thk       = board_thk) {
     // support collar (board rests on this -> airflow gap underneath)
-    cylinder(d = post_shaft_d + 2.4, h = board_lift);
+    cylinder(d = collar_d, h = collar_h);
     difference() {
         union() {
-            translate([0, 0, board_lift])
-                cylinder(d = post_shaft_d, h = board_thk + post_fit);
+            // shaft runs 0.05 PAST the barb's underside so the two overlap in
+            // volume rather than meeting on a bare plane -- a plane contact
+            // unions into separate mesh bodies. The barb's retaining face, which
+            // is what sets seat height, is unmoved.
+            translate([0, 0, collar_h])
+                cylinder(d = shaft_d, h = thk + post_fit + 0.05);
             // barb: cone from full width (flat retaining underside) to a point
-            translate([0, 0, board_lift + board_thk + post_fit])
-                cylinder(d1 = post_barb_d, d2 = 1.0, h = post_barb_h);
+            translate([0, 0, collar_h + thk + post_fit])
+                cylinder(d1 = barb_d, d2 = 1.0, h = post_barb_h);
         }
         // flex slot across the shaft + barb (not the collar)
-        translate([-post_slot_w / 2, -(post_barb_d / 2 + 0.5), board_lift - 0.01])
-            cube([post_slot_w, post_barb_d + 1,
-                  board_thk + post_fit + post_barb_h + 0.1]);
+        translate([-post_slot_w / 2, -(barb_d / 2 + 0.5), collar_h - 0.01])
+            cube([post_slot_w, barb_d + 1,
+                  thk + post_fit + post_barb_h + 0.1]);
     }
 }
 
@@ -172,6 +217,17 @@ module arm() {
         // cable groove along the top of the arm
         translate([socket_depth, -arm_groove_w / 2, arm_h - arm_groove_d])
             cube([arm_len, arm_groove_w, arm_groove_d + 0.1]);
+
+        // detent grooves in the tenon sides, mating the socket's tab bumps.
+        // Vertical cylinders, so they print without overhangs and self-centre
+        // the bump. Depth follows bump_proud; bump_fit keeps it from binding.
+        // The tenon is otherwise untouched -- full section, so the joint keeps
+        // the bending stiffness the set screw version had.
+        // groove centre sits bump_off OUTSIDE the tenon face, so the groove is
+        // only as deep as the bump actually protrudes rather than a full radius
+        for (gy = [-1, 1])
+            translate([bump_at, gy * (arm_w / 2 + bump_off), -0.05])
+                cylinder(d = bump_d + bump_fit, h = arm_h + 0.1);
     }
 
     // key rib on the TOP of the tenon, centred on the arm axis and running the
@@ -189,12 +245,18 @@ module arm() {
     translate([span_end, 0, 0]) sensor_cradle(arm_h);
 }
 
+// Ø standoff_od collar (the seat, unchanged from the screw version) topped by a
+// short locating pip that enters the Pi's mounting hole. The pip is deliberately
+// SHORTER than the PCB is thick, so it never protrudes above the board and the
+// lid's hold-down pad can bear on a flat surface. Nothing here flexes -- see the
+// standoff parameter block for why the snap-post version was abandoned.
 module standoff() {
-    difference() {
-        cylinder(h = standoff_h, d = standoff_od);
-        translate([0, 0, -0.1])
-            cylinder(h = standoff_h + 0.2, d = hole_pilot_d);
-    }
+    cylinder(d = standoff_od, h = standoff_h);
+    // slight taper on the pip so a board dropped in roughly still finds the hole
+    translate([0, 0, standoff_h - 0.01])
+        cylinder(d1 = pip_d, d2 = pip_d - 0.4, h = pip_h + 0.01);
+    assert(pip_d < pi_hole_d, "locating pip must enter the Pi's mounting hole");
+    assert(pip_h < pcb_t, "pip must stay below flush so the lid pad can bear flat");
 }
 
 module standoff_field() {
@@ -205,23 +267,52 @@ module standoff_field() {
     assert(hole_dx == 58 && hole_dy == 49, "Pi 4 mount pattern must stay 58x49");
 }
 
+// Keyed socket protruding +Y on the GPIO wall. Built in GLOBAL tray z (placed
+// at z=0, not at z=floor) so its underside sits on the bed -- the previous
+// version floated a 10 x 12 mm slab 2 mm above the bed with nothing beneath
+// it, an unsupported overhang in a design that claims to print support-free.
+//
+// The bore is open at the OUTBOARD (+Y) face and blind at the inboard end,
+// where the tray wall closes it. The previous version had it capped outboard
+// AND closed by the tray wall, i.e. a sealed cavity: the arm could not be
+// inserted and its bar intersected the cap by 100 mm^3.
+//
+// The key is a notch cut UP into the bore ceiling; the tenon's top rib seats in
+// it, so the tenon only enters right-side-up (a 180 deg roll puts the rib on
+// the notch-less floor and blocks insertion).
 module tray_socket() {
-    // keyed rectangular socket protruding +Y on the GPIO wall. The key is a
-    // notch cut UP into the bore ceiling; the arm tenon's top rib seats in it,
-    // so the tenon can only enter right-side-up (a 180 deg roll puts the rib on
-    // the notch-less floor and blocks insertion).
-    sx = arm_w + socket_fit;
-    sz = arm_h + socket_fit;
+    sx    = arm_w + socket_fit;
+    sz    = arm_h + socket_fit;
+    bore_z = floor + wall - socket_fit / 2;    // centres the bore on the tenon
+    top_z  = bore_z + sz;
+
+    assert(bore_z > 0, "socket bore must clear the bed");
+
     difference() {
-        translate([0, 0, 0]) cube([sx + 2 * wall, socket_depth + wall, sz + 2 * wall]);
-        translate([wall, -0.1, wall]) cube([sx, socket_depth + 0.1, sz]);      // tenon bore
-        translate([wall + sx / 2, socket_depth / 2, sz + wall])                 // set screw
-            cylinder(h = wall + 0.2, d = setscrew_d);
-        // key notch: channel up into the bore ceiling, centred on the bore,
-        // running the full tenon depth; mates the arm tenon's top key rib.
-        translate([wall + sx / 2 - key_w / 2, -0.1, wall + sz - 0.01])
-            cube([key_w, socket_depth + 0.1, key_h + 0.01]);
+        cube([sx + 2 * wall, socket_depth, top_z + wall]);
+
+        // tenon bore: through to the outboard face, blind inboard (tray wall)
+        translate([wall, -0.1, bore_z]) cube([sx, socket_depth + 0.2, sz]);
+
+        // key notch up into the bore ceiling, full depth
+        translate([wall + sx / 2 - key_w / 2, -0.1, top_z - 0.01])
+            cube([key_w, socket_depth + 0.2, key_h + 0.01]);
+
+        // free each side wall into a cantilever tab: a slot above and below,
+        // rooted inboard, free at the mouth so the entering tenon meets the
+        // compliant end first and cams it open.
+        for (sx0 = [0, wall + sx])
+            for (sz0 = [bore_z - tab_slot, bore_z + sz])
+                translate([sx0 - 0.1, socket_depth - tab_len, sz0])
+                    cube([wall + 0.2, tab_len + 0.2, tab_slot]);
     }
+
+    // detent bumps on the tabs, protruding bump_proud into the bore. Round, so
+    // insertion and removal are both smooth -- the arm is meant to come off.
+    for (bx = [wall + bump_d / 2 - bump_proud,
+               wall + sx - bump_d / 2 + bump_proud])
+        translate([bx, bump_at, bore_z])
+            cylinder(d = bump_d, h = sz);
 }
 
 module tray() {
@@ -287,8 +378,10 @@ module tray() {
     }
     // standoffs, seated so the board's holes land on the 58x49 pattern
     translate([wall + board_fit, board_fit, floor]) standoff_field();
-    // arm socket on the GPIO wall, protruding +Y
-    translate([(out_x - (arm_w + socket_fit + 2 * wall)) / 2, out_y, floor])
+    // arm socket on the GPIO wall, protruding +Y. Placed at z=0 (not z=floor)
+    // so it prints off the bed instead of overhanging; tray_socket() builds its
+    // bore at the right height internally.
+    translate([(out_x - (arm_w + socket_fit + 2 * wall)) / 2, out_y, 0])
         tray_socket();
 }
 
@@ -332,6 +425,26 @@ module lid_assembled() {
             // top plate
             translate([px0, py0, top_z0])
                 cube([px1 - px0, py1 - py0, top_z1 - top_z0]);
+
+            // hold-down pads: four tapered pillars descending from the top
+            // plate to just below the board's top face, concentric with the
+            // tray standoffs. They are what actually retains the Pi -- the
+            // clamp path is pad -> board -> standoff collar, so the board is
+            // pinched at four points with no bending moment and nothing that
+            // has to flex. Tapered (wider at the plate) because the lid prints
+            // closed-top-down: in print orientation these are upright pillars
+            // standing on their wide end.
+            for (hx = [hole_edge, hole_edge + hole_dx])
+                for (hy = [hole_edge, hole_edge + hole_dy])
+                    translate([wall + board_fit + hx, board_fit + hy,
+                               board_top - hold_preload])
+                        difference() {
+                            cylinder(d1 = hold_d, d2 = hold_base_d,
+                                     h = top_z0 - board_top + hold_preload + 0.01);
+                            // clear the locating pip standing in the board's hole
+                            translate([0, 0, -0.05])
+                                cylinder(d = hold_bore_d, h = hold_bore_h + 0.05);
+                        }
 
             // x-min skirt (SD side), grooved over the ridge segments (snap_seg_x).
             // Skirt top runs up to top_z1 so it overlaps the plate volume (a
@@ -407,6 +520,18 @@ module fit_coupon() {
         // stub of the open-channel edge: a 2 mm-tall lip only, so a port stack clears above it
         translate([0, cy - wall, 0]) cube([cx, wall, floor + 2]);
     }
+}
+
+// Cheap test print for the arm joint: the socket exactly as the tray carries
+// it, on a small base pad. Lets the detent be tuned against the already-printed
+// arm for a few grams, rather than discovering it after an 8-hour tray.
+module socket_gauge() {
+    sw = arm_w + socket_fit + 2 * wall;
+    pad = 4;
+    translate([pad, 0, 0]) tray_socket();
+    // pad + a back stop standing in for the tray wall that closes the bore
+    cube([sw + 2 * pad, wall, floor + wall + arm_h + socket_fit + wall]);
+    translate([0, 0, 0]) cube([sw + 2 * pad, socket_depth, floor]);
 }
 module assembly() {
     // Visual-only view (not printed): tray + Pi ghost + snap-fit lid + plugged
