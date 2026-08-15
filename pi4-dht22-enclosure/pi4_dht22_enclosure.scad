@@ -69,22 +69,25 @@ key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key ri
 key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
 key_fit      = 0.4;    // rib-in-notch lateral clearance
 
-/* ---------- DHT22 sensor board + snap-post cradle (DFRobot SEN0137) ---------- */
-// Official SEN0137 drawing: 41.52 x 22.0 mm board, white sensor at the top,
-// two mounting holes 15.0 mm apart / 10.91 mm up from the bottom (connector) edge.
-board_len      = 41.52;  // PCB length: connector (bottom) end -> sensor (top) end
-board_wid      = 22.0;   // PCB width
-board_thk      = 1.6;    // PCB thickness (assumed standard; confirm with calipers)
-mnt_dx         = 15.0;   // mounting-hole spacing (centre-to-centre, across the width)
-mnt_from_bot   = 10.91;  // hole centres, measured from the connector/bottom edge
-mnt_hole_d     = 3.0;    // board mounting-hole diameter (M3 assumed)
-grip_len       = 16.0;   // cradle pad length under the board's bottom (grip) end
+/* ---------- DHT22 sensor board + snap-post cradle ---------- */
+// Measured off the board in hand (2026-08-15): 29.52 x 13.0 mm, ONE mounting
+// hole of 2.85 mm. A single hole cannot stop the board rotating about the post,
+// so the cradle adds side rails that capture the board's width; the post then
+// only has to retain it vertically. See sensor_cradle().
+board_len      = 29.52;  // PCB length along the arm axis (cable end -> sensor end)
+board_wid      = 13.0;   // PCB width
+board_thk      = 1.6;    // measured PCB thickness
+mnt_from_end   = 7.2;    // measured hole centre, from the cable/near end
+mnt_hole_d     = 2.85;   // measured board mounting-hole diameter
+grip_len       = 16.0;   // cradle pad + rail length under the board's near end
+rail_t         = 2.0;    // anti-rotation side rail thickness
+rail_fit       = 0.3;    // total width clearance between the rails
 board_lift     = 3.0;    // airflow gap: board sits this far above the pad
 cradle_gauge_t = 3.0;    // pad thickness for the standalone sensor_gauge test print
-post_shaft_d   = 2.6;    // snap-post shaft dia (clears the 3.0 hole)
+post_shaft_d   = 2.75;   // snap-post shaft dia; 0.10 under the hole (was 2.6 -> wobbled)
 post_barb_d    = 3.4;    // barb outer dia (> hole -> retains the board)
 post_barb_h    = 1.4;    // barb height (chamfered lead-in cone)
-post_slot_w    = 1.0;    // central flex slot: splits each post into two prongs
+post_slot_w    = 1.0;    // central flex slot: splits the post into two prongs
 post_fit       = 0.15;   // vertical clearance so the board seats under the barb
 
 /* ---------- global sanity asserts ---------- */
@@ -92,6 +95,9 @@ assert(wall > 0 && floor > 0, "thicknesses must be positive");
 assert(board_fit >= 0 && post_fit >= 0, "fits must be non-negative");
 assert(post_barb_d > mnt_hole_d && post_shaft_d < mnt_hole_d,
        "snap post must clear the board hole yet retain it");
+assert(mnt_from_end > post_barb_d / 2 && mnt_from_end < grip_len,
+       "mounting hole must land on the cradle pad");
+assert(board_len > grip_len, "board must cantilever past the pad into free air");
 
 /* ---------- dispatcher ---------- */
 if      (part == "_smoke")       cube(10);
@@ -106,7 +112,7 @@ else echo(str("unknown part: ", part));
 // One split snap-post at the local origin, rising in +Z from z=0.
 // A support collar lifts the board for airflow; a slotted shaft passes through
 // the board's mounting hole and a chamfered barb snaps over the top to retain
-// it. The central slot splits the shaft into two prongs that flex together as
+// it. The central slot splits the post into two prongs that flex together as
 // the board is pushed on, then spring back under the barb.
 module snap_post() {
     // support collar (board rests on this -> airflow gap underneath)
@@ -126,18 +132,28 @@ module snap_post() {
     }
 }
 
-// Snap-post cradle: a pad under the board's bottom (connector) end carrying two
-// snap posts on the SEN0137 hole pattern. The board mounts flat with its sensor
-// end cantilevered off the +X end into free air; the cable exits the bottom
-// (near local x=0) and drops to the arm's groove. `pad_h` sets the pad height so
-// the same cradle serves the low standalone gauge and the arm-height version.
-// Local frame: board bottom edge at x=0, board runs +X, width centred on Y.
+// Snap-post cradle: a pad under the board's near (cable) end carrying ONE snap
+// post plus two anti-rotation side rails. The board drops in from above between
+// the rails -- which hug its width and so fix its angle, the job the second post
+// used to do -- and the post's prongs flex through the single mounting hole and
+// spring back to retain it vertically. The rails stop flush with the seated
+// board's top face, so it drops straight down rather than sliding in end-on.
+// The sensor end cantilevers off the +X end into free air; the cable exits the
+// near end and drops into the arm's groove. `pad_h` sets the pad height so the
+// same cradle serves the low standalone gauge and the arm-height version.
+// Local frame: board near edge at x=0, board runs +X, width centred on Y.
 module sensor_cradle(pad_h) {
-    m = 2;                                    // pad margin around the board width
-    translate([-6, -(board_wid / 2 + m), 0])
-        cube([grip_len + 6, board_wid + 2 * m, pad_h]);
-    for (sy = [-mnt_dx / 2, mnt_dx / 2])
-        translate([mnt_from_bot, sy, pad_h]) snap_post();
+    gap    = board_wid + rail_fit;            // clear span between the rails
+    pad_w  = gap + 2 * rail_t;
+    back   = 6;                               // pad reach behind the board's near edge
+    rail_h = board_lift + board_thk;          // flush with the seated board top
+
+    translate([-back, -pad_w / 2, 0])
+        cube([grip_len + back, pad_w, pad_h]);
+    for (sy = [-(gap + rail_t) / 2, (gap + rail_t) / 2])
+        translate([0, sy - rail_t / 2, pad_h])
+            cube([grip_len, rail_t, rail_h]);
+    translate([mnt_from_end, 0, pad_h]) snap_post();
 }
 
 module sensor_gauge() { sensor_cradle(cradle_gauge_t); }

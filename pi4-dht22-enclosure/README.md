@@ -7,15 +7,17 @@ plume. Prints flat, no supports; PETG recommended.
 Model: `pi4_dht22_enclosure.scad`. Design record: `docs/design/`. Renders:
 `docs/renders/`.
 
-## The DHT22 module — DFRobot Gravity DHT22 (SEN0137)
+## The DHT22 module — measured, single-hole breakout
 
-Designed around the **DFRobot Gravity DHT22 (SEN0137)**: a flat 41.52 × 22.0 mm
-board with the sensor at one end and a 3-pin Gravity connector at the other. It
-mounts by its **two holes** (15.0 mm apart, 10.91 mm from the connector edge)
-onto snap-posts at the arm's end — the sensor cantilevers into free air and the
-cable runs back down the arm. For a different board, measure it and set
-`board_len` / `board_wid` / `board_thk`, `mnt_dx`, `mnt_from_bot`, `mnt_hole_d`
-at the top of the SCAD (Ø3.0 M3 holes / 1.6 mm PCB assumed).
+Sized to the board in hand (measured 2026-08-15): **29.52 × 13.0 × 1.6 mm**,
+with a **single Ø2.85 mm mounting hole, 7.2 mm from the cable end**.
+
+One hole can't stop the board rotating, so the cradle at the arm's end pairs the
+snap-post with **two side rails** that capture the board's width. The board drops
+in from above, the post's split prongs flex through the hole and spring back to
+retain it, the sensor end cantilevers into free air, and the cable runs back down
+the arm groove. For a different board, measure it and set `board_len` /
+`board_wid` / `board_thk`, `mnt_from_end`, `mnt_hole_d` at the top of the SCAD.
 
 ## Parts
 
@@ -56,7 +58,7 @@ in plastic:
 
 ## Fit-test ladder (cheap prints, print in this order)
 
-1. `stl/sensor_gauge.stl` — the sensor cradle alone (pad + the two snap-posts).
+1. `stl/sensor_gauge.stl` — the sensor cradle alone (pad + rails + the snap-post).
    **Print this first**, push your DHT22 board onto it, and confirm a firm click
    before committing to the full arm. Tune `post_barb_d` / `post_slot_w` /
    `post_fit` if the snap is too stiff or loose.

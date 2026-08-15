@@ -42,27 +42,28 @@ design routes around that failure mode rather than chasing tolerances into it.
 
 ### DHT22 module (the sensor)
 
-Designed around the **DFRobot Gravity DHT22 (SEN0137)** — a flat PCB with the white
-sensor at one end and a 3-pin Gravity connector at the other, the cable exiting in the
-plane of the board. Dimensions are from the official DFRobot drawing:
+Sized to the breakout **measured in hand on 2026-08-15** — a flat PCB with the white
+sensor at one end and the cable exiting the other in the plane of the board. Every
+value below is a caliper reading, not a datasheet figure:
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `board_len` | 41.52 mm | PCB length (connector end → sensor end) |
-| `board_wid` | 22.0 mm | PCB width |
-| `board_thk` | 1.6 mm | PCB thickness (assumed standard; confirm) |
-| `mnt_dx` | 15.0 mm | mounting-hole spacing (centre-to-centre) |
-| `mnt_from_bot` | 10.91 mm | hole centres, from the connector (bottom) edge |
-| `mnt_hole_d` | 3.0 mm | board mounting-hole diameter (M3 assumed) |
+| `board_len` | 29.52 mm | PCB length (cable end → sensor end) |
+| `board_wid` | 13.0 mm | PCB width |
+| `board_thk` | 1.6 mm | PCB thickness |
+| `mnt_from_end` | 7.2 mm | hole centre, from the cable end |
+| `mnt_hole_d` | 2.85 mm | board mounting-hole diameter |
 
-**The board mounts by its two holes onto snap-posts — not a drop-in pocket.** An earlier
-revision used a drop-in cavity sized to a chunky strip; the real SEN0137 is a flat board
-whose sensor is on its *face* and whose cable exits its *end*, so it is held instead by
-two split snap-posts on its mounting-hole pattern (see §4). The board pushes on and
-clicks under a barb; its sensor end **cantilevers off the pad into free air** — maximum
-airflow, the whole point of the arm — and the cable exits the bottom into the arm groove.
-`board_lift` raises the board off the pad so air passes underneath too. For a different
-module, measure it and set `board_len/wid/thk`, `mnt_dx`, `mnt_from_bot`, `mnt_hole_d`.
+**The board is held by one snap-post plus two side rails — not a drop-in pocket.** Two
+earlier revisions were wrong about this part: the first assumed a chunky strip that drops
+into a cavity, the second assumed a two-hole DFRobot SEN0137. The actual board is a flat
+strip whose sensor is on its *face*, whose cable exits its *end*, and which has a **single**
+mounting hole. One hole cannot fix the board's angle, so rails capture its width and the
+post only retains it vertically (see §4). Its sensor end **cantilevers off the pad into
+free air** — maximum airflow, the whole point of the arm — and the cable exits the near end
+into the arm groove. `board_lift` raises the board off the pad so air passes underneath
+too. For a different module, measure it and set `board_len/wid/thk`, `mnt_from_end`,
+`mnt_hole_d`.
 
 ## 3. Architecture — three parts
 
@@ -138,17 +139,27 @@ is **10 × 6 mm**, printed flat so its length runs along the bed for bending str
 
 ### Snap-post sensor cradle
 
-The DHT22 board is held at the arm's far end by a pad carrying **two split snap-posts** on
-the board's own mounting-hole pattern (`mnt_dx` apart, `mnt_from_bot` from the connector
-edge). Each post is a support collar (height `board_lift`, so the board sits proud of the
-pad for airflow), a slotted shaft through the Ø`mnt_hole_d` hole, and a chamfered barb that
-snaps over the top. The central slot splits the shaft into two prongs that flex together as
-the board is pushed on, then spring back under the barb — a tool-free click, matching the
-snap-fit lid. The pad only underlies the board's **connector end**; the **sensor end
-cantilevers past it into open air**. The pad height equals `arm_h`, so it fuses flush with
-the bar top and the whole arm prints flat, support-free. Snap force tunes via `post_barb_d`,
-`post_slot_w`, and `post_fit`; the `sensor_gauge` test print is the cradle alone, for
-dialing this in before printing the full arm.
+The DHT22 board is held at the arm's far end by a pad carrying **one split snap-post plus
+two anti-rotation side rails**.
+
+The post sits at `mnt_from_end` from the board's cable edge: a support collar (height
+`board_lift`, so the board sits proud of the pad for airflow), a slotted shaft through the
+Ø`mnt_hole_d` hole, and a chamfered barb that snaps over the top. The central slot splits
+the post into two prongs that flex together as the board is pushed on, then spring back
+under the barb — a tool-free click, matching the snap-fit lid.
+
+**The rails are what make a single hole workable.** One post fixes the board's position but
+not its *angle* — it would pivot freely about the post. Two rails, `rail_fit` wider apart
+than the board, capture its width and fix the angle, leaving the post responsible only for
+vertical retention. The rails stop flush with the seated board's top face, so the board
+drops straight down between them rather than having to slide in end-on, which is what lets
+the barb do its job.
+
+The pad only underlies the board's **cable end**; the **sensor end cantilevers past it into
+open air**. The pad height equals `arm_h`, so it fuses flush with the bar top and the whole
+arm prints flat, support-free. Lateral fit tunes via `post_shaft_d` (sized just under
+`mnt_hole_d`) and snap force via `post_barb_d` / `post_slot_w` / `post_fit`; the
+`sensor_gauge` test print is the cradle alone, for dialing this in before the full arm.
 
 ## 5. Parts (intended)
 
@@ -158,7 +169,7 @@ Dimensions are the design intent; the SCAD is authoritative once modeled.
 |---|---|---|---|
 | Base tray | ~89 × 60 mm | walls 2 mm, floor 2 mm, standoffs 5 mm | 1 |
 | Lid | ~89 × 60 mm | ~20 mm internal clear height over the board | 1 |
-| Sensor arm | ~106 × 26 mm | 80 mm reach + plug tenon, groove, snap-post cradle | 1 |
+| Sensor arm | ~106 × 17 mm | 80 mm reach + plug tenon, groove, snap-post cradle | 1 |
 
 Fit clearance around the board is `board_fit` = 0.4 mm. Lid-to-tray is a snap-fit joint:
 ridge/groove segments on the two walled sides (x-min/SD and +Y/GPIO), flanking the SD
@@ -171,10 +182,11 @@ via `part=`. **Ordered by uncertainty: the sensor cradle goes first**, because t
 snap-post fit is the newest, never-printed feature and the most likely to need a tweak —
 cheapest thing to get wrong, so prove it first.
 
-1. **`sensor_gauge`** — the cradle alone (pad + two snap-posts, the same ones the arm
-   uses). Push your DHT22 onto it and confirm a firm click **before** printing the full
-   arm; tune `post_barb_d` / `post_slot_w` / `post_fit` if the snap is too stiff or loose.
-   A few grams versus reprinting a 100 mm arm.
+1. **`sensor_gauge`** — the cradle alone (pad + rails + the snap-post, the same ones the
+   arm uses). Push your DHT22 onto it and confirm a firm, non-wobbling click **before**
+   printing the full arm; tune `post_shaft_d` for lateral slop and `post_barb_d` /
+   `post_slot_w` / `post_fit` for snap force. A few grams versus reprinting a 100 mm arm.
+   The first gauge print (2026-08-15) is exactly what caught the wrong board assumption.
 2. **`fit_coupon`** — a small tile carrying **one corner of the standoff pattern plus one
    adjacent port-channel edge**. Verifies the two Pi-side things that actually have to be
    right: the M2.5 pilot fit and hole-to-edge spacing, and that a real Pi's port stack
@@ -253,9 +265,10 @@ arm_len, arm_w, arm_h            sensor arm reach and cross-section
 arm_groove_w, arm_groove_d       cable groove along the arm top
 socket_depth, socket_fit,        keyed plug socket + M3 set screw
   setscrew_d, key_w, key_h       socket ceiling notch keyed to the tenon rib
-board_len, board_wid, board_thk  DHT22 (SEN0137) board — MEASURE yours
-mnt_dx, mnt_from_bot, mnt_hole_d board mounting-hole pattern
-grip_len, board_lift             cradle pad reach; board airflow lift
+board_len, board_wid, board_thk  DHT22 breakout board — MEASURE yours
+mnt_from_end, mnt_hole_d         single mounting hole: position and diameter
+grip_len, board_lift             cradle pad/rail reach; board airflow lift
+rail_t, rail_fit                 anti-rotation side rails: thickness and width clearance
 post_shaft_d, post_barb_d,       snap-post: shaft/barb/slot + seat clearance
   post_barb_h, post_slot_w, post_fit
 cradle_gauge_t                   pad thickness for the sensor_gauge test print

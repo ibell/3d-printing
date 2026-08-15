@@ -1,6 +1,30 @@
 # Build log
 
-## 2026-08-15 — sensor holder redesigned for the DFRobot SEN0137
+## 2026-08-15 (later) — first gauge printed; single-hole board, wobble fixed
+
+**Printed `sensor_gauge` — and it caught two things, which is the whole point of it.**
+
+1. **Wrong board.** Not the SEN0137 assumed below. The board in hand measures
+   **29.52 × 13.0 × 1.6 mm with ONE Ø2.85 mm hole, 7.2 mm from the cable end**. A single
+   hole can't fix the board's angle, so the two-post cradle is replaced by **one snap-post
+   plus two anti-rotation side rails** that capture the board's width. Rails stop flush
+   with the seated board's top face so it still drops in from above onto the barb.
+2. **Post wobbled laterally.** A 2.6 mm shaft in a 2.85 mm hole, minus print shrinkage on
+   the post, left real slop. `post_shaft_d` 2.6 → **2.75** (0.10 under the hole). Barb
+   left at 3.4 — retention was never the complaint.
+
+Layout confirmed visually against `docs/renders/sensor-cradle-fit.png` before reprinting.
+`arm` is now ~106 × 17.3 mm (was ~106 × 26). All five parts still render single,
+watertight, min z = 0; `tests/check_all.sh` passes.
+
+Next: reprint `stl/sensor_gauge.stl` and confirm the board seats without wobble or
+rotation. Then `stl/fit_coupon.stl` against the real Pi, then the production set.
+
+Still unmeasured: the white sensor body's footprint and height, and the cable bundle
+width. Neither is load-bearing — the sensor cantilevers into open air and the cable is
+unconstrained at that end — but they'd let the arm groove be sized properly.
+
+## 2026-08-15 — sensor holder redesigned for the DFRobot SEN0137 (superseded, see above)
 
 The DHT22 in hand is a **DFRobot Gravity DHT22 (SEN0137)** — a flat 41.52 × 22.0 mm
 board with the sensor on its face and a 3-pin Gravity cable off its end, not the
