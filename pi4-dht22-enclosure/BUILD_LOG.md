@@ -1,5 +1,29 @@
 # Build log
 
+## 2026-08-16 — SHT40 arm and clip released
+
+Reprinted the clip with the pads moved clear of the SMD part, and the dummy carrying its
+components. **Fit confirmed** — the board drops onto the pips, the clip slides on and
+clamps, nothing fouls. Judged a shade loose but acceptable; `clip_fit` stays at 0.20 and a
+0.15 variant is exported alongside if it is ever wanted.
+
+Final parts for this build:
+
+| Part | Volume | Notes |
+|---|---|---|
+| `stl/arm.stl` | 7.5 cm³ | tenon, cable groove, passive cradle |
+| `stl/sensor_clip.stl` | 0.66 cm³ | print flat, as exported |
+
+Both single watertight bodies, min z = 0, support-free. Tray, lid and their coupons are
+unchanged from the DHT22 build and do not need reprinting.
+
+Renders: `docs/renders/sht40-arm-final.png`, `sht40-arm-detail.png`.
+
+**Still unproven:** that the cradle matches the real SHT40. The dummy shares the `sht_*`
+parameters with the cradle, so it can only show the joint works, not that the numbers are
+right. They came from Adafruit's own model and all landed on imperial values, so the risk is
+low — but the board goes on the pips before anything else when it arrives.
+
 ## 2026-08-16 — the clip was fouling a surface-mount component
 
 Asked whether the dummy carried the board's SMD parts and whether the clip really cleared

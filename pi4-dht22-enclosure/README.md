@@ -98,10 +98,16 @@ checks that the parts actually assemble (no solid overlap) and that nothing
 overhangs unsupported. STLs in `stl/` are pre-oriented (min Z = 0) — drop them
 straight into the slicer.
 
-**Status: printed and working.** Every part has been printed and every interface
-confirmed in plastic — DHT22 in the cradle, arm in the socket, Pi on the
-standoffs, microSD through the notch, jumpers clearing the lid, and the lid
-snapping to the tray. `BUILD_LOG.md` records what failed on the way and why.
+**Status: printed and working.** Every interface has been confirmed in plastic —
+arm in the socket, Pi on the standoffs, microSD through the notch, jumpers
+clearing the lid, the lid snapping to the tray, and the sensor cradle and clip
+against a printed dummy of the SHT40. `BUILD_LOG.md` records what failed on the
+way and why.
+
+The one thing still unproven is that the cradle matches the **real** SHT40: the
+dummy shares its parameters with the cradle, so it proves the joint works but
+not that the numbers are right. Those came from Adafruit's own model, so the
+risk is low — but drop the real board on the pips before assuming.
 
 ## Re-export
 
@@ -124,8 +130,10 @@ cradle, so it proves the joint works; it cannot prove the parameters are right.
 Re-check with the real board.
 
 `clip_fit` (slack over the cradle walls) is the one number that only plastic can
-settle. **Settled 2026-08-16 at 0.20** — 0.20 / 0.30 / 0.40 were printed and the
-tightest slid on snugly without forcing.
+settle. **Settled 2026-08-16 at 0.20** — 0.20 / 0.30 / 0.40 were printed, the
+tightest chosen, and the reprint confirmed against the component-carrying dummy.
+It could stand to be a shade tighter; `stl/variants/sensor_clip_fit015.stl` is
+exported if you want to try 0.15.
 
 To run another sweep, export a variant set with `clip_mark` set to a different
 count per variant. The dimples are cut into the face that lands up on the bed,
