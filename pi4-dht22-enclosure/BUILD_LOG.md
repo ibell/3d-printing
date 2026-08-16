@@ -1,5 +1,30 @@
 # Build log
 
+## 2026-08-16 — clip friction trial + printable SHT40 dummy
+
+`clip_fit` (slack over the cradle walls) is the one number geometry cannot settle, so three
+clips are exported to `stl/variants/` at 0.20 / 0.30 / 0.40. Each 0.1 mm widens the U's span
+by 0.2 mm — measured at 27.18 / 27.38 / 27.58 mm, confirming the parameter does what it
+says. All three are single watertight bodies at min z = 0.
+
+Verified the two ends of that range rather than assuming the middle is representative:
+
+| | |
+|---|---|
+| clip @ 0.20, seated on cradle | 0.00 mm³ — the tightest still seats |
+| clip @ 0.20, mid-slide at x=10 | 0.00 mm³ — the tightest still slides |
+| clip @ 0.20, gripping the board | 10.0 mm³ |
+| clip @ 0.40, lifted 1 mm | 1.53 mm³ — the loosest still retains |
+
+Added `sht40_dummy`: a printable stand-in with the correct outline, hole pattern and
+connector blocks, so the joint can be exercised before the sensor arrives. It measures
+25.4 × 17.78 × 4.5 against Adafruit's model at 25.4 × 17.78 × 4.53.
+
+**Its limit is worth stating plainly:** the dummy is built from the same `sht_*` parameters
+as the cradle, so it can confirm the clip slides, grips and clears the connectors — it
+cannot confirm those parameters match the real board. That check only happens when the
+SHT40 lands.
+
 ## 2026-08-16 — the clip slides on; it was never going to snap on from above
 
 Second catch off the render, again before printing. The clip was drawn as a top-entry snap,

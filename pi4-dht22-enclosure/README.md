@@ -105,5 +105,26 @@ openscad -o stl/socket_gauge.stl -D 'part="socket_gauge"' pi4_dht22_enclosure.sc
 openscad -o stl/lid_gauge.stl    -D 'part="lid_gauge"'    pi4_dht22_enclosure.scad
 ```
 
+## Test prints for the SHT40 cradle
+
+`stl/sht40_dummy.stl` is a printable stand-in for the Adafruit 4885 board —
+correct outline, hole pattern and connector blocks — so the cradle and clip can
+be exercised before the real sensor arrives. It shares its parameters with the
+cradle, so it proves the joint works; it cannot prove the parameters are right.
+Re-check with the real board.
+
+`clip_fit` (slack over the cradle walls) is the one number that only plastic can
+settle. Three variants are exported to `stl/variants/`; print all three at once
+and keep whichever slides on snugly:
+
+```
+for f in 0.20 0.30 0.40; do
+  openscad -o "stl/variants/sensor_clip_fit${f/./}.stl" \
+    -D 'part="sensor_clip"' -D "clip_fit=$f" pi4_dht22_enclosure.scad
+done
+```
+
+Then set `clip_fit` in the SCAD to the winner and re-export `stl/sensor_clip.stl`.
+
 `part` also accepts `"assembly"` — tray + ghosted Pi + lid + arm, a visual
 check only, no STL.

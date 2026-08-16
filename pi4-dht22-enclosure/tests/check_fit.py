@@ -121,6 +121,20 @@ PAIRS = [
         1.0,
     ),
     (
+        # The printable stand-in must fit the cradle exactly as the real board
+        # does -- it is the only way to exercise the joint before the SHT40
+        # arrives. Note it shares the sht_* parameters with the cradle, so it
+        # cannot tell you whether those parameters are RIGHT.
+        "sht40-dummy-clears-cradle",
+        """
+        intersection() {
+            sensor_gauge();
+            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
+        }
+        """,
+        1.0,
+    ),
+    (
         # Slide path: the clip goes on axially, so a clear SEATED position is
         # not enough -- it has to be clear at every point along the travel too.
         "sht40-clip-slide-path-x8p0",
@@ -133,6 +147,20 @@ PAIRS = [
         1.0,
     ),
     (
+        # The printable stand-in must fit the cradle exactly as the real board
+        # does -- it is the only way to exercise the joint before the SHT40
+        # arrives. Note it shares the sht_* parameters with the cradle, so it
+        # cannot tell you whether those parameters are RIGHT.
+        "sht40-dummy-clears-cradle",
+        """
+        intersection() {
+            sensor_gauge();
+            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
+        }
+        """,
+        1.0,
+    ),
+    (
         # Slide path: the clip goes on axially, so a clear SEATED position is
         # not enough -- it has to be clear at every point along the travel too.
         "sht40-clip-slide-path-x10p0",
@@ -141,6 +169,20 @@ PAIRS = [
             translate([10.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
             sensor_gauge();
         }}
+        """,
+        1.0,
+    ),
+    (
+        # The printable stand-in must fit the cradle exactly as the real board
+        # does -- it is the only way to exercise the joint before the SHT40
+        # arrives. Note it shares the sht_* parameters with the cradle, so it
+        # cannot tell you whether those parameters are RIGHT.
+        "sht40-dummy-clears-cradle",
+        """
+        intersection() {
+            sensor_gauge();
+            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
+        }
         """,
         1.0,
     ),

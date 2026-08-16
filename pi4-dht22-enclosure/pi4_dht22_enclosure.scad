@@ -246,6 +246,7 @@ else if (part == "fit_coupon")   fit_coupon();
 else if (part == "socket_gauge") socket_gauge();
 else if (part == "lid_gauge")    lid_gauge();
 else if (part == "sensor_clip")  sensor_clip();
+else if (part == "sht40_dummy")  sht40_dummy();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
@@ -336,6 +337,35 @@ module sensor_clip() {
 }
 
 module sensor_gauge() { sensor_cradle(cradle_gauge_t); }
+
+// Printable stand-in for the SHT40 board, so the cradle and clip can be
+// exercised before the real part arrives. Outline, hole pattern and connector
+// blocks all come from the same sht_* parameters the cradle is built from.
+//
+// CAVEAT worth stating: because it shares those parameters, this dummy cannot
+// tell you whether the parameters are RIGHT. It tests the cradle against my
+// reading of Adafruit's model, not against the board. It will confirm the clip
+// slides, grips and clears the connectors; it will not catch a mis-measured
+// board. Re-check with the real SHT40 when it lands.
+module sht40_dummy() {
+    r = 1.65;                       // corner radius, measured off the model
+    difference() {
+        union() {
+            linear_extrude(sht_thk)
+                hull()
+                    for (x = [r, sht_len - r], y = [r, sht_wid - r])
+                        translate([x, y]) circle(r = r);
+            // STEMMA QT connector stand-ins on both short ends
+            for (x0 = [0.23, 20.99])
+                translate([x0, sht_wid / 2 - sht_conn_half, sht_thk])
+                    cube([4.18, 2 * sht_conn_half, sht_conn_h]);
+        }
+        for (hx = [sht_hole_x0, sht_len - sht_hole_x0])
+            for (hy = [sht_wid / 2 - sht_hole_dy / 2, sht_wid / 2 + sht_hole_dy / 2])
+                translate([hx, hy, -0.5])
+                    cylinder(d = sht_hole_d, h = sht_thk + 1);
+    }
+}
 
 module arm() {
     span_end = socket_depth + arm_len;      // where the cradle joins the bar
