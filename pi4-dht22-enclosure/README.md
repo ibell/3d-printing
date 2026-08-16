@@ -1,23 +1,33 @@
-# Raspberry Pi 4 enclosure with DHT22 sensor arm
+# Raspberry Pi 4 enclosure with a plug-in sensor arm
 
 A desk enclosure for a Pi 4 Model B temperature node — a tray, a snap-fit lid,
-and a plug-in arm that holds a DHT22 module in free air off the Pi's warm
+and a plug-in arm that holds the sensor board in free air off the Pi's warm
 plume. Prints flat, no supports; PETG recommended.
+
+The arm currently carries an **Adafruit SHT40 (4885)**. It originally carried a
+DHT22, which is why the directory is named `pi4-dht22-enclosure`; the tray, lid
+and coupons were untouched by the swap, because the cradle at the arm's end is
+the only sensor-specific geometry in the model.
 
 Model: `pi4_dht22_enclosure.scad`. Design record: `docs/design/`. Renders:
 `docs/renders/`.
 
-## The DHT22 module — measured, single-hole breakout
+## The sensor board — Adafruit SHT40 (4885)
 
-Sized to the board in hand (measured 2026-08-15): **29.52 × 13.0 × 1.6 mm**,
-with a **single Ø2.85 mm mounting hole, 7.2 mm from the cable end**.
+Dimensions come from Adafruit's own 3D model, vendored to `docs/reference/`:
+**25.4 × 17.78 × 1.6 mm**, four Ø2.5 mounting holes on a **20.32 × 12.70**
+pattern, STEMMA QT connectors on both short ends occupying only the central
+5.94 mm of the width.
 
-One hole can't stop the board rotating, so the cradle at the arm's end pairs the
-snap-post with **two side rails** that capture the board's width. The board drops
-in from above, the post's split prongs flex through the hole and spring back to
-retain it, the sensor end cantilevers into free air, and the cable runs back down
-the arm groove. For a different board, measure it and set `board_len` /
-`board_wid` / `board_thk`, `mnt_from_end`, `mnt_hole_d` at the top of the SCAD.
+Two things about that shape shaped the cradle. Four holes means **rotation is
+already solved** by the pair at one end. And because the connectors sit in the
+central band, the **outer ~4 mm of each long edge is clear end to end**, so the
+cradle supports and clamps those strips while the connectors and the sensor
+breathe through an open channel.
+
+The board drops onto two locating pips and is held by a **separate slide-on
+clip**. Nothing in the cradle flexes. For a different board, set the `sht_*`
+parameters at the top of the SCAD.
 
 ## Parts
 
@@ -25,11 +35,12 @@ the arm groove. For a different board, measure it and set `board_len` /
 |---|---|
 | **Tray** | Holds the Pi on four locating posts — no screws; the lid's pads press it down. Carries the SD notch, DHT22 cable exit, floor vents, snap ridges, and the keyed arm socket. |
 | **Lid** | Vented top with the LED window and open port channels. Snaps onto the tray — no lid screws. Four underside pads clamp the Pi onto its standoffs. |
-| **Arm** | Plugs into the tray socket as a keyed friction fit — no set screw, nothing sprung. Routes the DHT22 cable in a groove and ends in a snap cradle (one post + two rails) that the DHT22 board clicks onto — sensor cantilevered into free air. |
+| **Arm** | Plugs into the tray socket as a keyed friction fit — no set screw, nothing sprung. Routes the sensor cable in a groove and ends in a passive cradle: two locating pips and support rails, with the board's far end cantilevered into free air. |
+| **Clip** | Separate part. Slides onto the cradle walls from the outboard end and clamps the board down. Printed lying flat, so its legs bend within the layer plane. |
 
 **Fasteners, in total: none.** The Pi sits on four locating posts and is clamped
 by pads under the lid, the lid snaps onto the tray, the arm is a keyed friction
-fit in its socket, and the DHT22 clips onto the arm.
+fit in its socket, and the sensor board is held by the slide-on clip.
 
 Note the Pi is only held down **with the lid fitted** — with the lid off it is
 located but free to lift.
@@ -62,10 +73,9 @@ in plastic:
 
 ## Fit-test ladder (cheap prints, print in this order)
 
-1. `stl/sensor_gauge.stl` — the sensor cradle alone (pad + rails + the snap-post).
-   **Print this first**, push your DHT22 board onto it, and confirm a firm click
-   before committing to the full arm. Tune `post_barb_d` / `post_slot_w` /
-   `post_fit` if the snap is too stiff or loose.
+1. `stl/sensor_gauge.stl` — the sensor cradle alone. **Print this first**, with
+   `stl/sht40_dummy.stl` and `stl/sensor_clip.stl`, and confirm the board drops
+   onto the pips and the clip slides on, before committing to the full arm.
 2. `stl/fit_coupon.stl` — one standoff plus an open-channel edge. Confirms the
    locating pip enters the Pi's hole at the right spacing and that its ports
    clear the open channel.
@@ -114,17 +124,25 @@ cradle, so it proves the joint works; it cannot prove the parameters are right.
 Re-check with the real board.
 
 `clip_fit` (slack over the cradle walls) is the one number that only plastic can
-settle. Three variants are exported to `stl/variants/`; print all three at once
-and keep whichever slides on snugly:
+settle. **Settled 2026-08-16 at 0.20** — 0.20 / 0.30 / 0.40 were printed and the
+tightest slid on snugly without forcing.
+
+To run another sweep, export a variant set with `clip_mark` set to a different
+count per variant. The dimples are cut into the face that lands up on the bed,
+so the prints are tellable apart by touch — three unmarked clips 0.2 mm apart
+in span could not be distinguished after printing:
 
 ```
-for f in 0.20 0.30 0.40; do
+i=1; for f in 0.15 0.20 0.25; do
   openscad -o "stl/variants/sensor_clip_fit${f/./}.stl" \
-    -D 'part="sensor_clip"' -D "clip_fit=$f" pi4_dht22_enclosure.scad
+    -D 'part="sensor_clip"' -D "clip_fit=$f" -D "clip_mark=$i" \
+    pi4_dht22_enclosure.scad
+  i=$((i+1))
 done
 ```
 
-Then set `clip_fit` in the SCAD to the winner and re-export `stl/sensor_clip.stl`.
+Then set `clip_fit` in the SCAD to the winner and re-export `stl/sensor_clip.stl`
+(the production clip carries no dimples).
 
 `part` also accepts `"assembly"` — tray + ghosted Pi + lid + arm, a visual
 check only, no STL.

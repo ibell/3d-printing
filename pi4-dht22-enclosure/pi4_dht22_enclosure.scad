@@ -199,7 +199,13 @@ clip_w        = 5.0;     // clip extent along the arm axis
 // so the cable could only be fitted before the clip. The support rails run the
 // full grip length, so the clamp path is still clip -> board -> rail here.
 clip_x        = 6.5;
-clip_fit      = 0.3;     // slack over the cradle walls
+clip_fit      = 0.2;     // slack over the cradle walls. CHOSEN BY PRINT
+                         // 2026-08-16: 0.20 / 0.30 / 0.40 were printed and the
+                         // tightest slid on snugly without forcing.
+clip_mark     = 0;       // dimples cut into the printed top face, so variant
+                         // prints are tellable apart by touch. Set on the
+                         // command line when exporting a variant set; the
+                         // production clip carries none.
 clip_leg_t    = 2.2;
 clip_bar_t    = 2.5;
 // The bar must clear the TOP OF THE CRADLE WALLS, not just the connectors.
@@ -321,6 +327,15 @@ module sensor_clip_body() {
                     cube([clip_w, clip_bump + 0.01, clip_groove_h - 0.4]);
             }
         }
+        // variant marker dimples. Cut into the face that ends up UP on the bed
+        // (body +X maps to print +Z), so they print crisply and touch nothing
+        // that mates. Three near-identical clips came off the bed on 2026-08-16
+        // and could not be told apart -- count the dimples instead.
+        for (i = [0 : clip_mark - 1])
+            translate([clip_w - 0.5, (i - (clip_mark - 1) / 2) * 2.4,
+                       bar_z + clip_bar_t / 2])
+                rotate([0, 90, 0]) cylinder(d = 1.4, h = 1.5, $fn = 24);
+
         // lead-in chamfer on the rail's inboard end, so it finds the groove
         // mouth when sliding on rather than catching on the wall's end face
         for (mir = [0, 1]) mirror([0, mir, 0])

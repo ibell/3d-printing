@@ -1,5 +1,21 @@
 # Build log
 
+## 2026-08-16 — clip_fit settled at 0.20; variants now self-identifying
+
+Printed all three clips plus the dummy. **The tightest, `clip_fit` = 0.20, slides on snugly
+without forcing** — set as the production value and `stl/sensor_clip.stl` re-exported.
+
+The trial also exposed a flaw in how it was run: **three clips 0.2 mm apart in span are not
+tellable apart once printed.** Marking them afterwards is guesswork, which nearly wasted the
+print. Added `clip_mark`, cutting that many Ø1.4 x 0.5 mm dimples into the face that ends up
+UP on the bed (the body's +X maps to print +Z), so a variant set is identifiable by touch.
+Verified each dimple removes 0.76 mm³ against a predicted 0.77.
+
+The production clip carries no dimples; `clip_mark` is set only when exporting a sweep.
+
+General lesson for any future parameter sweep here: **if variants differ by less than about
+a millimetre, mark them in the model.** Not on the bed afterwards.
+
 ## 2026-08-16 — clip friction trial + printable SHT40 dummy
 
 `clip_fit` (slack over the cradle walls) is the one number geometry cannot settle, so three
