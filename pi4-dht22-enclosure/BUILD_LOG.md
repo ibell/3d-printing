@@ -1,5 +1,28 @@
 # Build log
 
+## 2026-08-16 — the clip slides on; it was never going to snap on from above
+
+Second catch off the render, again before printing. The clip was drawn as a top-entry snap,
+but its legs are ~5.6 mm long and 2.2 mm thick, so spreading them the 0.4 mm needed to clear
+the walls takes **about 12 kg**. They would break before they spread — the same lesson as
+the cradle barb and the socket tabs, this time reached by arithmetic instead of by breaking
+a print.
+
+So it is now an explicit **slide-on**, which suits the design better anyway: the wall grooves
+were already full-length rails, so the joint needs **no flex at all**. The clip enters at the
+walls' open outboard end and slides inboard until it butts the groove's closed end. The
+groove now starts at `clip_x`, so the stop and the clip's seated position are derived from
+one number and cannot disagree. A lead-in chamfer on each rail finds the groove mouth.
+
+Retention is now: rails in grooves hold it down and sideways, the stop halts insertion, and
+friction from the pads' 0.25 mm preload resists sliding back out. If that proves too free in
+plastic, a light taper on the groove is the fix — and the clip is 0.7 cm³ to reprint.
+
+**New check class: the slide path.** A clear seated position is not sufficient for a part
+that arrives by sliding, so `sht40-clip-slide-path-*` verifies clearance at three points
+along the travel, not just at the end of it. That is the same blind spot as checking a
+seated lid without checking it can enter the groove.
+
 ## 2026-08-16 — clip could not seat: bar landed on the cradle walls
 
 Caught by eye off the render, before printing. The clip's bar underside was derived from the

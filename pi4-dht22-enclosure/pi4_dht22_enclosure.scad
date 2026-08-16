@@ -180,10 +180,18 @@ cradle_gauge_t = 3.0;    // pad thickness for the standalone sensor_gauge print
 
 /* ---------- retention clip (separate part) ----------
    A flat U that straddles the cradle walls and presses on the board's edge
-   strips, directly over the pips, so the clamp path is clip -> board -> rail
-   with no bending moment. Printed LYING FLAT, so its legs flex within the
-   layer plane instead of across it. That orientation is only available because
-   it is a separate part -- the whole point of splitting it out. */
+   strips. Printed LYING FLAT, so the U profile is in the bed plane.
+
+   IT SLIDES ON FROM THE OUTBOARD END -- it does not push on from above. The
+   inward rails on its legs enter the wall grooves at the walls' open outboard
+   end and slide inboard until they butt the groove's closed end. Nothing
+   flexes, at all.
+
+   Snapping it on from the top was the first attempt and is not possible: the
+   legs are only ~5.6 mm long and 2.2 mm thick, so spreading them the 0.4 mm
+   needed to clear the walls takes about 12 kg. They would break first. That is
+   the same lesson as the cradle barb and the socket tabs, arrived at by
+   arithmetic this time rather than by breaking a print. */
 clip_w        = 5.0;     // clip extent along the arm axis
 // Clip sits OUTBOARD of the inboard connector (which ends at x=4.41), not over
 // the pips. Clamping over the pips would be marginally better mechanically, but
@@ -224,6 +232,9 @@ assert(clip_groove_h > clip_bump,
        "clip bump is taller than its groove -- it would wedge instead of seating");
 assert(clip_bar_gap > 0,
        "clip bar would land on the cradle walls before its pads reach the board");
+assert(clip_x + clip_w <= grip_len,
+       "clip would overhang the cradle walls and lose its groove engagement");
+assert(clip_x > 0, "groove needs wall material inboard of it to act as a stop");
 
 /* ---------- dispatcher ---------- */
 if      (part == "_smoke")       cube(10);
@@ -269,9 +280,13 @@ module sensor_cradle(pad_h) {
             }
         }
         // clip grooves, cut into the OUTER face of each wall
+        // Groove runs from clip_x to the walls' OUTBOARD end, so the wall
+        // material inboard of clip_x is a positive stop: the clip slides in
+        // until it butts there and cannot go further. Derived from clip_x so
+        // the stop and the clip's seated position cannot disagree.
         for (mir = [0, 1]) mirror([0, mir, 0])
-            translate([-0.1, w_out - clip_groove_d, pad_h + btop_rel + clip_groove_z])
-                cube([grip_len + 0.2, clip_groove_d + 0.1, clip_groove_h]);
+            translate([clip_x, w_out - clip_groove_d, pad_h + btop_rel + clip_groove_z])
+                cube([grip_len - clip_x + 0.1, clip_groove_d + 0.1, clip_groove_h]);
     }
     // locating pips, stopping below flush
     for (mir = [0, 1]) mirror([0, mir, 0])
@@ -305,11 +320,12 @@ module sensor_clip_body() {
                     cube([clip_w, clip_bump + 0.01, clip_groove_h - 0.4]);
             }
         }
-        // chamfer the bump's lower edge so the clip cams on rather than catching
+        // lead-in chamfer on the rail's inboard end, so it finds the groove
+        // mouth when sliding on rather than catching on the wall's end face
         for (mir = [0, 1]) mirror([0, mir, 0])
-            translate([-0.1, leg_in - clip_bump, bump_z])
-                rotate([45, 0, 0])
-                    cube([clip_w + 0.2, 1.2, 1.2]);
+            translate([-0.01, leg_in - clip_bump - 0.01, bump_z - 0.01])
+                rotate([0, -35, 0])
+                    cube([1.6, clip_bump + 0.02, clip_groove_h]);
     }
 }
 

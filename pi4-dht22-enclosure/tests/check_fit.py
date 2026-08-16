@@ -121,6 +121,42 @@ PAIRS = [
         1.0,
     ),
     (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x8p0",
+        f"""
+        intersection() {{
+            translate([8.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x10p0",
+        f"""
+        intersection() {{
+            translate([10.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x12p0",
+        f"""
+        intersection() {{
+            translate([12.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
         # The clip must not sit over either STEMMA QT connector, or the cable
         # could only be fitted before the clip. Connectors occupy the central
         # band on both short ends, standing sht_conn_h above the PCB.
