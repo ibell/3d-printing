@@ -137,38 +137,86 @@ key_w        = 2.0;    // socket ceiling notch width (X); mates the tenon key ri
 key_h        = 1.5;    // notch depth up into the bore ceiling (Z)
 key_fit      = 0.4;    // rib-in-notch lateral clearance
 
-/* ---------- DHT22 sensor board + snap-post cradle ---------- */
-// Measured off the board in hand (2026-08-15): 29.52 x 13.0 mm, ONE mounting
-// hole of 2.85 mm. A single hole cannot stop the board rotating about the post,
-// so the cradle adds side rails that capture the board's width; the post then
-// only has to retain it vertically. See sensor_cradle().
-board_len      = 29.52;  // PCB length along the arm axis (cable end -> sensor end)
-board_wid      = 13.0;   // PCB width
-board_thk      = 1.6;    // measured PCB thickness
-mnt_from_end   = 7.2;    // measured hole centre, from the cable/near end
-mnt_hole_d     = 2.85;   // measured board mounting-hole diameter
-grip_len       = 16.0;   // cradle pad + rail length under the board's near end
-rail_t         = 2.0;    // anti-rotation side rail thickness
-rail_fit       = 0.3;    // total width clearance between the rails
-board_lift     = 3.0;    // airflow gap: board sits this far above the pad
-cradle_gauge_t = 3.0;    // pad thickness for the standalone sensor_gauge test print
-post_shaft_d   = 2.75;   // snap-post shaft dia; 0.10 under the hole (was 2.6 -> wobbled)
-post_barb_d    = 3.4;    // barb outer dia (> hole -> retains the board)
-post_barb_h    = 1.4;    // barb height (chamfered lead-in cone)
-post_slot_w    = 1.0;    // central flex slot: splits the post into two prongs
-post_fit       = 0.15;   // vertical clearance so the board seats under the barb
+/* ---------- SHT40 sensor board (Adafruit 4885) + cradle & clip ----------
+   Dimensions are taken from Adafruit's own 3D model, not from a photo or a
+   guess: Adafruit_CAD_Parts/"4885 SHT40 Sensor". It is the standard 1.0 x 0.7
+   inch STEMMA QT outline, so every figure below lands on an imperial value.
+
+   Two facts about this board shape drive the design:
+     - FOUR mounting holes. Two of them, 12.70 mm apart across the width, fix
+       the board's angle by themselves, so the DHT22 cradle's anti-rotation
+       rails are no longer needed.
+     - The STEMMA QT connectors occupy only the CENTRAL 5.94 mm of the width,
+       on both short ends. The outer ~4 mm of each long edge is clear for the
+       board's whole length, so the cradle can support and clamp those strips
+       while the connectors and the sensor breathe through an open channel. */
+sht_len       = 25.4;    // board length (X)  -- 1.0"
+sht_wid       = 17.78;   // board width  (Y)  -- 0.7"
+sht_thk       = 1.6;     // PCB thickness
+sht_hole_d    = 2.5;     // mounting hole diameter
+sht_hole_x0   = 2.54;    // inboard hole pair, from the leading edge (0.1")
+sht_hole_dy   = 12.70;   // hole pitch across the width (0.5") -> y = +/-6.35
+sht_conn_half = 2.97;    // connector band half-width, about the centreline
+sht_conn_h    = 2.9;     // connector height above the PCB
+
+/* ---------- cradle (on the arm) ----------
+   NOTHING HERE FLEXES. Three sprung features failed in plastic on the DHT22
+   build, all because a feature printed standing in Z bends across its layer
+   lines. The cradle is now purely passive: pips locate, rails support. All the
+   retention -- and therefore all the tuning -- lives in a separate clip, which
+   is a few minutes to reprint and can be printed in its OWN orientation. */
+grip_len      = 12.0;    // cradle support length under the board's inboard end
+pad_back      = 6.0;     // pad reach behind the board's leading edge
+board_lift    = 3.0;     // airflow gap: board sits this far above the pad
+support_w     = 5.0;     // width of each support rail, centred on the hole line
+sens_pip_d    = 2.3;     // locating pip, 0.2 under sht_hole_d
+sens_pip_h    = 1.2;     // BELOW flush in a 1.6 mm PCB, so the clip bears on
+                         // the board rather than on the pip -- same reasoning
+                         // as the Pi standoffs
+wall_fit      = 0.3;     // side-wall clearance either side of the board
+wall_t        = 2.0;     // side-wall thickness
+wall_up       = 4.5;     // wall height above the board top
+cradle_gauge_t = 3.0;    // pad thickness for the standalone sensor_gauge print
+
+/* ---------- retention clip (separate part) ----------
+   A flat U that straddles the cradle walls and presses on the board's edge
+   strips, directly over the pips, so the clamp path is clip -> board -> rail
+   with no bending moment. Printed LYING FLAT, so its legs flex within the
+   layer plane instead of across it. That orientation is only available because
+   it is a separate part -- the whole point of splitting it out. */
+clip_w        = 5.0;     // clip extent along the arm axis
+// Clip sits OUTBOARD of the inboard connector (which ends at x=4.41), not over
+// the pips. Clamping over the pips would be marginally better mechanically, but
+// it buries the STEMMA QT socket under the clip's bar with 0.8 mm of headroom,
+// so the cable could only be fitted before the clip. The support rails run the
+// full grip length, so the clamp path is still clip -> board -> rail here.
+clip_x        = 6.5;
+clip_fit      = 0.3;     // slack over the cradle walls
+clip_leg_t    = 2.2;
+clip_bar_t    = 2.5;
+clip_pad_w    = 4.0;     // width of the pads that touch the board
+clip_preload  = 0.25;    // pads reach this far below the board top, so the clip
+                         // actually grips rather than merely touching
+clip_bump     = 0.7;     // inward bump on each leg
+clip_groove_z = 1.5;     // groove centre, above the board top
+clip_groove_h = 2.4;     // groove height; > bump so it seats rather than wedges
+clip_groove_d = clip_bump + 0.2;   // groove depth, derived from the bump
 
 /* ---------- global sanity asserts ---------- */
 assert(wall > 0 && floor > 0, "thicknesses must be positive");
 assert(2 * (ridge_base_half - lid_fit) < 2 * groove_half,
        "snap ridge is taller than the lid groove -- it cannot enter and will not snap");
 assert(ridge_base_half > snap_ridge_h, "ridge taper would invert");
-assert(board_fit >= 0 && post_fit >= 0, "fits must be non-negative");
-assert(post_barb_d > mnt_hole_d && post_shaft_d < mnt_hole_d,
-       "snap post must clear the board hole yet retain it");
-assert(mnt_from_end > post_barb_d / 2 && mnt_from_end < grip_len,
-       "mounting hole must land on the cradle pad");
-assert(board_len > grip_len, "board must cantilever past the pad into free air");
+assert(board_fit >= 0 && wall_fit >= 0 && clip_fit >= 0, "fits must be non-negative");
+assert(sens_pip_d < sht_hole_d, "locating pip must enter the board's mounting hole");
+assert(sens_pip_h < sht_thk,
+       "pip must stay below flush so the clip bears on the PCB, not the pip");
+assert(sht_hole_x0 < grip_len, "inboard holes must land on the cradle");
+assert(sht_len > grip_len, "board must cantilever past the cradle into free air");
+assert(hole_y - clip_pad_w / 2 > sht_conn_half,
+       "clip pads would foul the STEMMA QT connector band");
+assert(clip_groove_h > clip_bump,
+       "clip bump is taller than its groove -- it would wedge instead of seating");
 
 /* ---------- dispatcher ---------- */
 if      (part == "_smoke")       cube(10);
@@ -179,6 +227,7 @@ else if (part == "lid")          lid();
 else if (part == "fit_coupon")   fit_coupon();
 else if (part == "socket_gauge") socket_gauge();
 else if (part == "lid_gauge")    lid_gauge();
+else if (part == "sensor_clip")  sensor_clip();
 else if (part == "assembly")     assembly();
 else echo(str("unknown part: ", part));
 
@@ -187,58 +236,80 @@ else echo(str("unknown part: ", part));
 // the board's mounting hole and a chamfered barb snaps over the top to retain
 // it. The central slot splits the post into two prongs that flex together as
 // the board is pushed on, then spring back under the barb.
-// shaft_d/barb_d size the snap to the board's hole; collar_d/collar_h set the
-// support the board rests on; thk is the board thickness the barb must clear.
-// Defaults reproduce the DHT22 cradle exactly, so that (printed and validated)
-// geometry is untouched by the Pi standoffs reusing this module.
-module snap_post(shaft_d   = post_shaft_d,
-                 barb_d    = post_barb_d,
-                 collar_d  = post_shaft_d + 2.4,
-                 collar_h  = board_lift,
-                 thk       = board_thk) {
-    // support collar (board rests on this -> airflow gap underneath)
-    cylinder(d = collar_d, h = collar_h);
+// Half-widths and heights shared by the cradle and the clip, so the two are
+// derived from one set of numbers and cannot drift apart.
+w_out    = sht_wid / 2 + wall_fit + wall_t;   // outer face of a cradle wall
+hole_y   = sht_hole_dy / 2;                   // 6.35, the pip / clamp line
+btop_rel = board_lift + sht_thk;              // board top, above the pad top
+
+// Cradle: pad, two support rails under the board's clear edge strips, two
+// locating pips, and two side walls carrying the clip grooves. Passive only.
+// Local frame: board's leading (inboard) edge at x=0, board runs +X, width
+// centred on Y. The board's outboard end cantilevers past grip_len into free
+// air, and the open central channel clears the STEMMA QT connectors.
+module sensor_cradle(pad_h) {
     difference() {
         union() {
-            // shaft runs 0.05 PAST the barb's underside so the two overlap in
-            // volume rather than meeting on a bare plane -- a plane contact
-            // unions into separate mesh bodies. The barb's retaining face, which
-            // is what sets seat height, is unmoved.
-            translate([0, 0, collar_h])
-                cylinder(d = shaft_d, h = thk + post_fit + 0.05);
-            // barb: cone from full width (flat retaining underside) to a point
-            translate([0, 0, collar_h + thk + post_fit])
-                cylinder(d1 = barb_d, d2 = 1.0, h = post_barb_h);
+            translate([-pad_back, -w_out, 0])
+                cube([grip_len + pad_back, 2 * w_out, pad_h]);
+            for (mir = [0, 1]) mirror([0, mir, 0]) {
+                // support rail the board rests on
+                translate([0, hole_y - support_w / 2, pad_h])
+                    cube([grip_len, support_w, board_lift]);
+                // side wall
+                translate([0, sht_wid / 2 + wall_fit, pad_h])
+                    cube([grip_len, wall_t, btop_rel + wall_up]);
+            }
         }
-        // flex slot across the shaft + barb (not the collar)
-        translate([-post_slot_w / 2, -(barb_d / 2 + 0.5), collar_h - 0.01])
-            cube([post_slot_w, barb_d + 1,
-                  thk + post_fit + post_barb_h + 0.1]);
+        // clip grooves, cut into the OUTER face of each wall
+        for (mir = [0, 1]) mirror([0, mir, 0])
+            translate([-0.1, w_out - clip_groove_d, pad_h + btop_rel + clip_groove_z])
+                cube([grip_len + 0.2, clip_groove_d + 0.1, clip_groove_h]);
+    }
+    // locating pips, stopping below flush
+    for (mir = [0, 1]) mirror([0, mir, 0])
+        translate([sht_hole_x0, hole_y, pad_h + board_lift - 0.01])
+            cylinder(d1 = sens_pip_d, d2 = sens_pip_d - 0.4, h = sens_pip_h + 0.01);
+}
+
+// Retention clip. Modelled in its IN-USE orientation (straddling the board,
+// z=0 at the board's top face) and rotated onto its side by sensor_clip() for
+// printing, so its legs flex within the layer plane.
+module sensor_clip_body() {
+    leg_in   = w_out + clip_fit;
+    leg_out  = leg_in + clip_leg_t;
+    bar_z    = sht_conn_h + 0.8;              // bar underside clears the connectors
+    leg_bot  = -(0.5);                        // legs run just past the board top
+    bump_z   = clip_groove_z;
+
+    difference() {
+        union() {
+            // bar across the top
+            translate([0, -leg_out, bar_z]) cube([clip_w, 2 * leg_out, clip_bar_t]);
+            for (mir = [0, 1]) mirror([0, mir, 0]) {
+                // leg
+                translate([0, leg_in, leg_bot])
+                    cube([clip_w, clip_leg_t, bar_z - leg_bot]);
+                // pad pressing the board, directly over the pip
+                translate([0, hole_y - clip_pad_w / 2, -clip_preload])
+                    cube([clip_w, clip_pad_w, bar_z + clip_preload]);
+                // inward bump that seats in the cradle wall's groove
+                translate([0, leg_in - clip_bump, bump_z])
+                    cube([clip_w, clip_bump + 0.01, clip_groove_h - 0.4]);
+            }
+        }
+        // chamfer the bump's lower edge so the clip cams on rather than catching
+        for (mir = [0, 1]) mirror([0, mir, 0])
+            translate([-0.1, leg_in - clip_bump, bump_z])
+                rotate([45, 0, 0])
+                    cube([clip_w + 0.2, 1.2, 1.2]);
     }
 }
 
-// Snap-post cradle: a pad under the board's near (cable) end carrying ONE snap
-// post plus two anti-rotation side rails. The board drops in from above between
-// the rails -- which hug its width and so fix its angle, the job the second post
-// used to do -- and the post's prongs flex through the single mounting hole and
-// spring back to retain it vertically. The rails stop flush with the seated
-// board's top face, so it drops straight down rather than sliding in end-on.
-// The sensor end cantilevers off the +X end into free air; the cable exits the
-// near end and drops into the arm's groove. `pad_h` sets the pad height so the
-// same cradle serves the low standalone gauge and the arm-height version.
-// Local frame: board near edge at x=0, board runs +X, width centred on Y.
-module sensor_cradle(pad_h) {
-    gap    = board_wid + rail_fit;            // clear span between the rails
-    pad_w  = gap + 2 * rail_t;
-    back   = 6;                               // pad reach behind the board's near edge
-    rail_h = board_lift + board_thk;          // flush with the seated board top
-
-    translate([-back, -pad_w / 2, 0])
-        cube([grip_len + back, pad_w, pad_h]);
-    for (sy = [-(gap + rail_t) / 2, (gap + rail_t) / 2])
-        translate([0, sy - rail_t / 2, pad_h])
-            cube([grip_len, rail_t, rail_h]);
-    translate([mnt_from_end, 0, pad_h]) snap_post();
+// Print orientation: laid on its side so the U profile is in the bed plane.
+module sensor_clip() {
+    leg_out = w_out + clip_fit + clip_leg_t;
+    rotate([0, -90, 0]) translate([0, 0, 0]) sensor_clip_body();
 }
 
 module sensor_gauge() { sensor_cradle(cradle_gauge_t); }

@@ -10,8 +10,9 @@ here="$(dirname "$0")"
 
 # part            bbox_x  bbox_y  bbox_z  bbox_tol
 parts=(
-  "sensor_gauge   22.0    17.3    9.15    2.0"
-  "arm            106.0   17.3    12.15   2.0"
+  "sensor_gauge   18.0    22.38   12.1    2.0"
+  "sensor_clip     6.7    27.38    5.0    2.0"
+  "arm            102.0   22.38   15.1    2.0"
   "tray           89.0    68.8    12.2    2.0"
   "lid            92.1    63.1    34.9    3.0"
   "fit_coupon     32.0    28.0    12.0    2.0"

@@ -22,6 +22,13 @@ import trimesh
 
 ROOT = Path(__file__).resolve().parent.parent
 SCAD = ROOT / "pi4_dht22_enclosure.scad"
+# Adafruit's own model of the SHT40 breakout, vendored in docs/reference. Used
+# as ground truth for the cradle and clip so those are checked against the
+# manufacturer's geometry rather than numbers retyped from a drawing.
+SHT40 = ROOT / "docs" / "reference" / "adafruit-4885-sht40.stl"
+BOARD = f'translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) import("{SHT40}")'
+CLIP  = ('translate([clip_x, 0, cradle_gauge_t + btop_rel]) '
+         'sensor_clip_body()')
 
 # Solid pairs that must NOT overlap, expressed as an OpenSCAD intersection()
 # in assembled coordinates. Tolerance is in mm^3.
@@ -90,6 +97,33 @@ PAIRS = [
         0.5,
     ),
     (
+        # The SHT40 must drop onto the cradle without fouling it: pips are
+        # 0.2 mm under the mounting holes, and the walls clear the board edges.
+        # Checked against Adafruit's own model of the board.
+        "sht40-board-clears-cradle",
+        f"""
+        intersection() {{ sensor_gauge(); {BOARD}; }}
+        """,
+        2.0,
+    ),
+    (
+        # The clip must not sit over either STEMMA QT connector, or the cable
+        # could only be fitted before the clip. Connectors occupy the central
+        # band on both short ends, standing sht_conn_h above the PCB.
+        "sht40-clip-clears-connectors",
+        f"""
+        bt = cradle_gauge_t + btop_rel;
+        intersection() {{
+            {CLIP};
+            union() {{
+                translate([0.23, -sht_conn_half, bt]) cube([4.18, 2*sht_conn_half, sht_conn_h]);
+                translate([20.99, -sht_conn_half, bt]) cube([4.18, 2*sht_conn_half, sht_conn_h]);
+            }}
+        }}
+        """,
+        0.5,
+    ),
+    (
         # The lid pads must NOT be resting on the locating pips -- if their
         # clearance bores were too shallow or too narrow the pads would bear on
         # the pip tips instead of the PCB, and the Pi would never be clamped.
@@ -122,6 +156,27 @@ CLAMPS = [
         """,
         5.0,
         400.0,
+    ),
+    (
+        # The clip must actually grip the board -- pads reach clip_preload below
+        # the board top. If this were 0 the clip would merely rest on it. If it
+        # were large, the clip would be fouling the STEMMA QT connectors, which
+        # is the other way this can go wrong.
+        "sht40-clip-grips-board",
+        f"""
+        intersection() {{ {CLIP}; {BOARD}; }}
+        """,
+        3.0,
+        40.0,
+    ),
+    (
+        # The clip must seat on the cradle walls: its bumps engage the grooves.
+        "sht40-clip-engages-cradle",
+        f"""
+        intersection() {{ {CLIP}; sensor_gauge(); }}
+        """,
+        0.5,
+        60.0,
     ),
     (
         # pads pressing the Pi down onto the standoffs: four annular contacts,

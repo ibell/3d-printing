@@ -1,5 +1,54 @@
 # Build log
 
+## 2026-08-16 — arm redesigned for the Adafruit SHT40 (4885)
+
+Dimensions come from **Adafruit's own 3D model**, not a drawing or a photo:
+`Adafruit_CAD_Parts/"4885 SHT40 Sensor"`. Vendored to `docs/reference/` so the fit checks
+run against the manufacturer's actual geometry. It is the standard 1.0 × 0.7 inch STEMMA QT
+outline, so every figure lands on an imperial value:
+
+| | |
+|---|---|
+| Board | 25.4 × 17.78 mm, PCB 1.6 mm |
+| Mounting holes | **four**, Ø2.5, inset 2.54 from each edge → 20.32 × 12.70 pattern |
+| STEMMA QT | both short ends, central band y ±2.97 only, 2.9 mm above the PCB |
+
+Two properties of this board drove the design:
+
+- **Four holes means rotation is already solved.** The pair at one end, 12.70 mm apart,
+  fixes the angle by itself, so the DHT22's anti-rotation rails are gone.
+- **The outer ~4 mm of each long edge is clear end to end**, because the connectors sit in
+  the central band. The cradle supports and clamps those strips while the connectors and
+  the sensor breathe through an open central channel.
+
+### Retention: a separate clip, which is the important change
+
+The cradle is now **entirely passive** — pips locate, rails support, nothing flexes. All
+retention lives in a **separate clip**. Two reasons, and the second is the one that matters:
+
+1. It is a few minutes to reprint, so tuning it is cheap.
+2. **A separate part can be printed in its own orientation.** The clip is a flat U, printed
+   lying down, so its legs flex *within* the layer plane. Every sprung feature that failed
+   on the DHT22 build failed because it was printed standing in Z and bent across its layer
+   lines. This one cannot.
+
+The clip sits **outboard of the inboard connector** rather than over the pips. Clamping over
+the pips is marginally better mechanically, but it buries the STEMMA QT socket under the
+clip's bar with 0.8 mm of headroom — the cable could then only be fitted before the clip.
+The support rails run the full grip length, so the clamp path is still clip → board → rail.
+Caught by looking at the render with the real board in place, and now held by a check.
+
+### Checks, against the manufacturer's model
+
+- `sht40-board-clears-cradle` — 0.0 mm³; the board drops on without fouling
+- `sht40-clip-grips-board` — 8.9 mm³; the clip actually grips rather than merely touching
+- `sht40-clip-clears-connectors` — 0.0 mm³; neither connector is buried
+- `sht40-clip-engages-cradle` — 14.2 mm³; the bumps seat in the wall grooves
+
+Parts: `arm` 7.5 cm³ (was 7.0), `sensor_gauge` 2.0 cm³, `sensor_clip` 0.6 cm³. The tray, lid
+and their coupons are untouched — the cradle end really was the only sensor-specific
+geometry in the model.
+
 ## 2026-08-16 — the DHT22 build works; baseline complete
 
 Reprinted tray and lid with the derived groove and the taller ridge. **The lid snaps, and
