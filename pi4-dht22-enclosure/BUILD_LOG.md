@@ -1,5 +1,33 @@
 # Build log
 
+## 2026-08-16 — clip could not seat: bar landed on the cradle walls
+
+Caught by eye off the render, before printing. The clip's bar underside was derived from the
+CONNECTOR height (`sht_conn_h + 0.8` = 3.7 mm above the board top) while the cradle walls
+rise `wall_up` = 4.5 mm. **The bar landed on the wall tops 0.8 mm before the pads reached
+the board** — the clip could not seat at all.
+
+`clip_bar_gap` now derives the bar from `wall_up`, and an assert fails the render if it is
+not positive.
+
+### The check hid it, for the third time
+
+`sht40-clip-engages-cradle` **read 14.2 mm³ and passed a 0.5–60 range — and that 14.2 was
+the collision.** Same failure as the socket detent (60 mm³ tolerance, 28.9 mm³ reading, joint
+physically impossible) and the lid snap (60 mm³ tolerance, 3.4 mm³ reading, ridge wedged on
+the flanks). Three for three: **a tolerance widened to accommodate an intended interference
+is wide enough to hide an unintended one.**
+
+Replaced with the pair that has worked everywhere else:
+
+- `sht40-clip-seated-on-cradle` (tol 1.0, reads 0.0) — seated, the clip touches the cradle
+  almost nowhere; its bumps sit inside the grooves with clearance
+- `sht40-clip-retains-when-lifted` (reads 2.0 mm³) — lift it and the bumps run into the
+  groove's top edge
+
+Retention is modest by design: the pads' 0.25 mm preload pushes the clip up until the bumps
+bear on the groove edges. `clip_bump` is the knob, and the clip is 0.7 cm³ to reprint.
+
 ## 2026-08-16 — arm redesigned for the Adafruit SHT40 (4885)
 
 Dimensions come from **Adafruit's own 3D model**, not a drawing or a photo:

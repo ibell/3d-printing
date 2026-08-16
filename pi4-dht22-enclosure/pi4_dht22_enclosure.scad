@@ -194,6 +194,11 @@ clip_x        = 6.5;
 clip_fit      = 0.3;     // slack over the cradle walls
 clip_leg_t    = 2.2;
 clip_bar_t    = 2.5;
+// The bar must clear the TOP OF THE CRADLE WALLS, not just the connectors.
+// First version set it from sht_conn_h alone, putting the bar underside 0.8 mm
+// BELOW the wall tops: the clip landed on the walls and its pads never reached
+// the board. Derived from wall_up now so the two cannot disagree.
+clip_bar_gap  = 0.6;     // bar underside, above the cradle wall top
 clip_pad_w    = 4.0;     // width of the pads that touch the board
 clip_preload  = 0.25;    // pads reach this far below the board top, so the clip
                          // actually grips rather than merely touching
@@ -217,6 +222,8 @@ assert(hole_y - clip_pad_w / 2 > sht_conn_half,
        "clip pads would foul the STEMMA QT connector band");
 assert(clip_groove_h > clip_bump,
        "clip bump is taller than its groove -- it would wedge instead of seating");
+assert(clip_bar_gap > 0,
+       "clip bar would land on the cradle walls before its pads reach the board");
 
 /* ---------- dispatcher ---------- */
 if      (part == "_smoke")       cube(10);
@@ -278,7 +285,7 @@ module sensor_cradle(pad_h) {
 module sensor_clip_body() {
     leg_in   = w_out + clip_fit;
     leg_out  = leg_in + clip_leg_t;
-    bar_z    = sht_conn_h + 0.8;              // bar underside clears the connectors
+    bar_z    = wall_up + clip_bar_gap;        // bar underside clears the WALL TOPS
     leg_bot  = -(0.5);                        // legs run just past the board top
     bump_z   = clip_groove_z;
 

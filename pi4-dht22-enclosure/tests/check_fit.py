@@ -107,6 +107,20 @@ PAIRS = [
         2.0,
     ),
     (
+        # A SEATED clip must touch the cradle almost nowhere -- its bumps sit
+        # inside the grooves with clearance and its legs clear the walls by
+        # clip_fit. This read 14.2 mm^3 in the first version and PASSED a
+        # 0.5-60 range: that number was the clip's bar resting on the wall tops,
+        # 0.8 mm before its pads reached the board. Third time a tolerance
+        # widened for an intended interference hid an unintended one, so this is
+        # now a no-overlap check paired with a lifted-retention check below.
+        "sht40-clip-seated-on-cradle",
+        f"""
+        intersection() {{ {CLIP}; sensor_gauge(); }}
+        """,
+        1.0,
+    ),
+    (
         # The clip must not sit over either STEMMA QT connector, or the cable
         # could only be fitted before the clip. Connectors occupy the central
         # band on both short ends, standing sht_conn_h above the PCB.
@@ -170,12 +184,17 @@ CLAMPS = [
         40.0,
     ),
     (
-        # The clip must seat on the cradle walls: its bumps engage the grooves.
-        "sht40-clip-engages-cradle",
+        # Retention: seated, the bump sits inside its groove and touches
+        # nothing. Lift the clip and the bump must run into the groove's top
+        # edge. Zero here would mean the clip simply lifts off.
+        "sht40-clip-retains-when-lifted",
         f"""
-        intersection() {{ {CLIP}; sensor_gauge(); }}
+        intersection() {{
+            translate([0, 0, 1.0]) {{ {CLIP}; }}
+            sensor_gauge();
+        }}
         """,
-        0.5,
+        1.0,
         60.0,
     ),
     (
