@@ -16,7 +16,7 @@ parts=(
   "lid            91.2    62.2    34.4    3.0"
   "fit_coupon     32.0    28.0    12.0    2.0"
   "socket_gauge   22.4    12.0    12.4    2.0"
-  "lid_gauge      20.0     5.0    13.0    2.0"
+  "lid_gauge      20.0    27.1    34.4    2.0"
 )
 
 fail=0

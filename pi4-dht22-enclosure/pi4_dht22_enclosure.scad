@@ -564,30 +564,37 @@ module socket_gauge() {
 // Print AS EXPORTED. It is flipped the same way lid() is, so the skirt points
 // up and the groove's overhang faces the same way it will on the real lid; a
 // coupon printed in some other orientation would not predict the real one.
+// The FIRST version of this gauge was wrong in a way worth recording: it cut
+// the skirt off ~7 mm above the groove and stood it on a foot. But on the real
+// lid the skirt hangs from the TOP PLATE, putting the groove ~28 mm from its
+// root. Cantilever stiffness goes as 1/L^3, so that gauge was about 67x stiffer
+// than the thing it was meant to predict -- it would have read "far too tight"
+// on a snap that is actually fine. A gauge that misreports force is worse than
+// no gauge.
+//
+// So the slice now runs the FULL height, from the skirt's free bottom edge up
+// through a strip of top plate, and is rooted the way the real skirt is. No
+// foot: the flip puts the top plate on the bed, which is also how lid() prints.
+//
+// Residual limit, stated honestly: this is still a straight slice with no
+// corners, and the real plate is a large stiff diaphragm rather than a 24 mm
+// strip. It will read somewhat STIFFER than the real lid. Treat "firm but it
+// clicks" as good; only act on an extreme result.
 module lid_gauge() {
-    out_y   = board_l + 2 * board_fit + wall;
-    top_z1  = floor + standoff_h + pcb_t + lid_clear + lid_wall;
-    seg     = snap_seg_y[0];                       // [x0, len] of one +Y segment
-    x0      = seg[0] + 2;
-    xw      = min(seg[1] - 4, 20);                 // a manageable slice of it
-    zlo     = 5.0;                                 // skirt bottom
-    zhi     = snap_ridge_z + 7.0;                  // well above the groove
-    base    = 2.0;                                 // foot, added after the flip
+    out_y  = board_l + 2 * board_fit + wall;
+    top_z1 = floor + standoff_h + pcb_t + lid_clear + lid_wall;
+    py1    = out_y + snap_ridge_h + lid_fit + lid_wall;
+    seg    = snap_seg_y[0];                        // [x0, len] of one +Y segment
+    x0     = seg[0] + 2;
+    xw     = min(seg[1] - 4, 20);
+    yback  = out_y - 24;                           // top plate kept as the root
 
-    // The flip maps assembled z -> top_z1 - z, so the band lands at
-    // [top_z1-zhi, top_z1-zlo]. Shift it down so its cut face sits on the foot
-    // rather than floating where the (absent) top plate used to hold it.
-    translate([0, 0, base - (top_z1 - zhi)])
-        translate([0, out_y + snap_ridge_h + lid_fit + lid_wall, top_z1])
-            rotate([180, 0, 0])
-                intersection() {
-                    lid_assembled();
-                    translate([x0, out_y - 2, zlo])
-                        cube([xw, 12, zhi - zlo]);
-                }
-    // foot, so the thin skirt has something to stand on. The flip also maps
-    // y -> py1 - y, putting the band in print-y 0..~2.8.
-    translate([x0, -1, 0]) cube([xw, 5, base]);
+    translate([0, py1, top_z1]) rotate([180, 0, 0])
+        intersection() {
+            lid_assembled();
+            translate([x0, yback, 0])
+                cube([xw, py1 - yback + 1, top_z1 + 1]);
+        }
 }
 
 module assembly() {

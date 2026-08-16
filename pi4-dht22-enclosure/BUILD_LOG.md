@@ -1,5 +1,24 @@
 # Build log
 
+## 2026-08-15 (night) — lid_gauge was measuring the wrong thing; rebuilt
+
+Caught before it misled anyone: the first `lid_gauge` cut the skirt off ~7 mm above the
+groove and stood it on a foot. But on the real lid the skirt hangs from the **top plate**,
+putting the groove ~28 mm from its root. Cantilever stiffness goes as 1/L³, so that gauge
+was **~67× stiffer** than the part it was meant to predict — it would have reported "far too
+tight" on a snap that is fine, and prompted a pointless loosening of `lid_fit`.
+
+Rebuilt as a full-height slice: skirt free edge up through a 24 mm strip of top plate, so it
+is rooted the way the real skirt is. No foot needed — the flip puts the plate on the bed,
+which is how `lid()` prints anyway. 2.91 cm³.
+
+Residual limit, recorded rather than hidden: it is still a straight slice with no corners,
+and the real top plate is a large diaphragm, not a 24 mm strip. It will read somewhat
+stiffer than the real lid. "Firm but it clicks" is a pass.
+
+Added `docs/renders/full-assembly-{apart,seated}.png` — tray, Pi with its GPIO jumpers,
+microSD through the notch, arm with the DHT22, and the lid.
+
 ## 2026-08-15 (night) — printed tray finds two real errors: SD notch and lid height
 
 ### microSD notch was at the wrong height (my error)
