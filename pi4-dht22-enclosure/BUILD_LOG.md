@@ -1,5 +1,49 @@
 # Build log
 
+## 2026-08-16 — the DHT22 build works; baseline complete
+
+Reprinted tray and lid with the derived groove and the taller ridge. **The lid snaps, and
+the whole assembly works.** Every interface is now confirmed in plastic rather than only in
+the model:
+
+| Interface | Confirmed |
+|---|---|
+| DHT22 board → cradle | yes (barb broken on the first print, taped; rails + post still locate it) |
+| Arm tenon → tray socket | yes, `socket_fit` 0.4 mm |
+| Pi → locating pips | yes |
+| Pi held down by lid pads | yes |
+| microSD through the notch | yes, after the z fix |
+| GPIO jumpers under the lid | yes, `jump_stack` 24 mm measured |
+| Lid snap → tray ridge | yes, after the groove was derived from the ridge |
+
+This is the **DHT22 baseline**. Worth stating plainly what the exercise cost and taught,
+because the pattern repeated:
+
+- **Three sprung features failed in plastic, all for print-direction reasons.** The cradle
+  barb broke across its layer lines; the socket's cantilever tabs fused because freeing them
+  needed horizontal slots in a part that prints bore-horizontal; the lid snap could not
+  enter its own groove. Only the third survived, once its groove was derived from its ridge.
+- **Every one of those passed a check first.** In each case the tolerance had been widened
+  to accommodate an intended interference, which left it wide enough to hide an unintended
+  one. The fix each time was a *pair* of checks — must seat freely AND must resist coming
+  apart — rather than a single looser one.
+- **Renders never found any of it.** Overlapping solids merge in a render; only explicit
+  solid intersections and measured stack-ups caught these.
+
+### Next: SHT40 replacing the DHT22
+
+The DHT22 was destroyed in wiring; an **SHT40** is on order. That is an accuracy upgrade as
+well as a replacement — ±0.2 °C typical against the DHT22's ±0.5 °C.
+
+The enclosure is unaffected: the tray, lid, coupons and the arm's tenon/groove all stay as
+they are. Only `sensor_cradle()` and the `board_*` / `mnt_*` parameters need revisiting,
+since the SHT40 breakout is a different outline with a different mounting-hole pattern. The
+arm's cradle end is deliberately the only sensor-specific geometry in the model, which is
+what makes this a small change rather than a redesign.
+
+Do **not** carry over the split snap-post: it is the feature that broke, and a new sensor
+board is the moment to replace it with something that does not flex across layer lines.
+
 ## 2026-08-15 (night) — tray + lid printed: they fit, but the lid would not snap
 
 Root cause, and it was not "a bit loose" — **the ridge could not enter the groove at all.**

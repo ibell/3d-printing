@@ -86,8 +86,12 @@ PETG, 0.2 mm layers, 3 perimeters, ~20% infill, no supports. All seven parts
 render as single watertight bodies and pass `tests/check_all.sh`, which also
 checks that the parts actually assemble (no solid overlap) and that nothing
 overhangs unsupported. STLs in `stl/` are pre-oriented (min Z = 0) — drop them
-straight into the slicer. The cradle and arm are printed and confirmed; the
-tray, lid and coupons are not. See `BUILD_LOG.md`.
+straight into the slicer.
+
+**Status: printed and working.** Every part has been printed and every interface
+confirmed in plastic — DHT22 in the cradle, arm in the socket, Pi on the
+standoffs, microSD through the notch, jumpers clearing the lid, and the lid
+snapping to the tray. `BUILD_LOG.md` records what failed on the way and why.
 
 ## Re-export
 
