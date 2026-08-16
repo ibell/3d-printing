@@ -45,11 +45,18 @@ PAIRS = [
         2.0,
     ),
     (
-        "lid-on-tray",
+        # A SEATED lid should touch the tray almost nowhere: the ridge sits
+        # inside the groove with clearance. The old geometry read 3.4 mm^3 here
+        # because the ridge was too tall to enter and the lid was wedged on the
+        # ridge flanks -- which is exactly why it "fitted but would not snap".
+        # The 60.0 tolerance let that through. Paired with
+        # lid-snap-retains-when-lifted, these two now pin the joint down: seats
+        # freely AND resists lifting.
+        "lid-on-tray-seated",
         """
         intersection() { tray(); lid_assembled(); }
         """,
-        60.0,
+        2.0,
     ),
     (
         # An inserted microSD must pass through the notch. The card lives BELOW
@@ -101,6 +108,21 @@ PAIRS = [
 # interference fits the design relies on. A zero here means a joint that looks
 # fine but never actually engages.
 CLAMPS = [
+    (
+        # Retention: with the lid SEATED the ridge sits inside the groove with
+        # clearance, so a seated check reads 0 and proves nothing. Lift the lid
+        # and the lip must run into the ridge -- that collision IS the snap. A
+        # zero here means the lid would simply fall off.
+        "lid-snap-retains-when-lifted",
+        """
+        intersection() {
+            tray();
+            translate([0, 0, 1.5]) lid_assembled();
+        }
+        """,
+        5.0,
+        400.0,
+    ),
     (
         # pads pressing the Pi down onto the standoffs: four annular contacts,
         # ~hold_preload deep. Zero would mean the lid never touches the board.

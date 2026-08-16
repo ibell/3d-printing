@@ -1,5 +1,44 @@
 # Build log
 
+## 2026-08-15 (night) — tray + lid printed: they fit, but the lid would not snap
+
+Root cause, and it was not "a bit loose" — **the ridge could not enter the groove at all.**
+
+The ridge tapers at 45°, so where it crosses the lid's lip plane its cross-section was
+`2 × (ridge_base_half − lid_fit)` = **2.4 mm tall**, while the groove opening was hardcoded
+at **2.0 mm**. The lid rode up on the ridge flanks and never dropped in. Compounding it,
+engagement was only `snap_ridge_h − lid_fit` = 0.5 mm, of which print tolerance on two
+mating surfaces can eat most.
+
+Fixes:
+
+- **The groove is now DERIVED from the ridge** (`groove_half = ridge_base_half − lid_fit +
+  groove_clear`) instead of hardcoded, so the two cannot disagree again. A global `assert`
+  fails the render if the ridge is ever taller than the groove.
+- `snap_ridge_h` 0.8 → **1.2**, so engagement is **0.9 mm** rather than 0.5.
+- `lid_wall` 2.0 → **2.5**: the deeper groove left only 0.8 mm of skirt behind it.
+
+Also fixed a variable-ordering bug introduced by the above: `groove_half` referenced
+`lid_fit` eleven lines before it was defined, so it silently evaluated to undefined and the
+lid rendered empty. `lid_wall`/`lid_fit` now sit above the snap block.
+
+### The check that should have caught this, and why it didn't
+
+`lid-on-tray` had a **60 mm³** tolerance and read 3.4 mm³ — the signature of a lid *wedged*
+on the ridge flanks — and passed. That is the same failure mode as the socket detent: a
+tolerance loose enough for an intended interference is loose enough to hide an unintended
+one.
+
+Replaced with a pair that pins the joint down, because neither alone is sufficient:
+
+- **`lid-on-tray-seated`** (tol 2.0, reads 0.0) — a seated lid must touch almost nothing.
+  The old jammed geometry would fail this.
+- **`lid-snap-retains-when-lifted`** (reads 54.3 mm³) — lift the lid 1.5 mm and the lip must
+  collide with the ridge. That collision *is* the snap; zero would mean the lid falls off.
+
+Parts grew slightly: tray 14.2 cm³, lid 31.6 cm³ (taller skirt + thicker wall), lid_gauge
+3.7 cm³.
+
 ## 2026-08-15 (night) — lid_gauge was measuring the wrong thing; rebuilt
 
 Caught before it misled anyone: the first `lid_gauge` cut the skirt off ~7 mm above the

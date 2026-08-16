@@ -18,8 +18,29 @@ wall        = 2.0;
 floor       = 2.0;
 board_fit   = 0.4;
 tray_wall_h = 10.0;    // tray wall height above floor
-snap_ridge_h = 0.8;   // how far the ridge protrudes out from the wall
-snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
+lid_wall    = 2.5;     // 2.0 left only 0.8 mm of skirt behind the groove
+lid_fit     = 0.3;     // lid-over-tray clearance. Defined BEFORE the snap block
+                       // below, which derives the groove from it -- OpenSCAD
+                       // resolves these in file order.
+/* Lid snap. The first printed pair FITTED BUT DID NOT SNAP (2026-08-15), for
+   two reasons that compounded:
+
+   1. The ridge could not physically enter the groove. The ridge tapers at 45
+      deg, so at the lid's lip plane it was 2*(ridge_base_half - lid_fit) =
+      2.4 mm tall, while the groove opening was hardcoded at 2.0 mm. The lid
+      rode up on the ridge flanks and never dropped in.
+   2. Even had it entered, engagement was only snap_ridge_h - lid_fit = 0.5 mm,
+      and print tolerance on two mating surfaces can eat most of that.
+
+   The groove is now DERIVED from the ridge instead of hardcoded, so the two
+   cannot disagree again, and the ridge is taller for a real grip. */
+snap_ridge_h    = 1.2;   // how far the ridge protrudes (was 0.8 -> too shallow)
+snap_ridge_z    = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
+ridge_base_half = snap_ridge_h + 0.6;  // half-height at the wall; tip keeps 0.6
+groove_clear    = 0.3;   // slack so the ridge drops in rather than wedging
+// half-height of the lid groove: must clear the ridge's cross-section where it
+// crosses the lip plane, which is (ridge_base_half - lid_fit) by the 45 deg taper
+groove_half     = ridge_base_half - lid_fit + groove_clear;
 /* Internal clear height above the board top. NOT a round number picked for
    looks -- it is the GPIO jumper stack-up, which is the tallest thing in the
    box. The DHT22's female jumper housings slide down over the header pins, and
@@ -29,8 +50,6 @@ snap_ridge_z = floor + tray_wall_h - 3.0;  // z of ridge centre (near wall top)
 jump_stack  = 24.0;    // MEASURED 2026-08-15: PCB top surface -> top of jumper
 wire_bend   = 5.0;     // room above the jumper for the wire to turn over
 lid_clear   = jump_stack + wire_bend;   // 29.0
-lid_wall    = 2.0;
-lid_fit     = 0.3;     // lid-over-tray clearance
 
 /* ---------- snap-fit ridge/groove segments (shared by tray + lid) ----------
    Each wall carries TWO ridge segments that FLANK its obstruction; the lid's
@@ -141,6 +160,9 @@ post_fit       = 0.15;   // vertical clearance so the board seats under the barb
 
 /* ---------- global sanity asserts ---------- */
 assert(wall > 0 && floor > 0, "thicknesses must be positive");
+assert(2 * (ridge_base_half - lid_fit) < 2 * groove_half,
+       "snap ridge is taller than the lid groove -- it cannot enter and will not snap");
+assert(ridge_base_half > snap_ridge_h, "ridge taper would invert");
 assert(board_fit >= 0 && post_fit >= 0, "fits must be non-negative");
 assert(post_barb_d > mnt_hole_d && post_shaft_d < mnt_hole_d,
        "snap post must clear the board hole yet retain it");
@@ -319,7 +341,6 @@ module tray() {
     // cross-section flush with the wall face down to a shorter cross-section
     // at the tip, giving ~45 deg chamfers top and bottom (rise ~= run ==
     // snap_ridge_h) so it prints support-free and a lid groove can ride over it.
-    ridge_base_half = 1.5;                    // half-height at the wall face
     ridge_tip_half  = ridge_base_half - snap_ridge_h;  // half-height at the tip
     ridge_slab      = 0.03;                   // thin slab thickness for hull()
 
@@ -408,8 +429,8 @@ module lid_assembled() {
     xfloor = -(snap_ridge_h + lid_fit);              // -1.1 x-min groove floor
     ylip   = out_y + lid_fit;                         // 59.1 +Y lip face
     yfloor = out_y + snap_ridge_h + lid_fit;         // 59.9 +Y groove floor
-    gz0 = snap_ridge_z - 1.0;                         //  8.0 groove z-bottom (mates ridge z=9)
-    gz1 = snap_ridge_z + 1.0;                         // 10.0 groove z-top
+    gz0 = snap_ridge_z - groove_half;                 // groove z-bottom
+    gz1 = snap_ridge_z + groove_half;                 // groove z-top
     eps = 0.01;
 
     assert(gz0 < snap_ridge_z && snap_ridge_z < gz1, "groove must straddle ridge centre");
