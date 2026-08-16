@@ -147,20 +147,6 @@ PAIRS = [
         1.0,
     ),
     (
-        # The printable stand-in must fit the cradle exactly as the real board
-        # does -- it is the only way to exercise the joint before the SHT40
-        # arrives. Note it shares the sht_* parameters with the cradle, so it
-        # cannot tell you whether those parameters are RIGHT.
-        "sht40-dummy-clears-cradle",
-        """
-        intersection() {
-            sensor_gauge();
-            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
-        }
-        """,
-        1.0,
-    ),
-    (
         # Slide path: the clip goes on axially, so a clear SEATED position is
         # not enough -- it has to be clear at every point along the travel too.
         "sht40-clip-slide-path-x10p0",
@@ -169,20 +155,6 @@ PAIRS = [
             translate([10.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
             sensor_gauge();
         }}
-        """,
-        1.0,
-    ),
-    (
-        # The printable stand-in must fit the cradle exactly as the real board
-        # does -- it is the only way to exercise the joint before the SHT40
-        # arrives. Note it shares the sht_* parameters with the cradle, so it
-        # cannot tell you whether those parameters are RIGHT.
-        "sht40-dummy-clears-cradle",
-        """
-        intersection() {
-            sensor_gauge();
-            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
-        }
         """,
         1.0,
     ),
@@ -197,6 +169,23 @@ PAIRS = [
         }}
         """,
         1.0,
+    ),
+    (
+        # THE check for this joint: the clip must not touch anything standing
+        # proud of the PCB. Restricting the intersection to z above the board
+        # top isolates component collisions from the pads' intended preload,
+        # which is what "clip grips board" alone could not distinguish -- it
+        # read 8.9 mm^3 with a 0.4 mm^3 collision buried inside it, and passed.
+        "sht40-clip-clears-components",
+        f"""
+        bt = cradle_gauge_t + board_lift + sht_thk;
+        intersection() {{
+            {CLIP};
+            {BOARD};
+            translate([-10, -25, bt + 0.05]) cube([60, 50, 25]);
+        }}
+        """,
+        0.3,
     ),
     (
         # The clip must not sit over either STEMMA QT connector, or the cable

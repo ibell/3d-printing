@@ -213,7 +213,14 @@ clip_bar_t    = 2.5;
 // BELOW the wall tops: the clip landed on the walls and its pads never reached
 // the board. Derived from wall_up now so the two cannot disagree.
 clip_bar_gap  = 0.6;     // bar underside, above the cradle wall top
-clip_pad_w    = 4.0;     // width of the pads that touch the board
+// Pad placement is set by what is CLEAR on the board, not by the pip line.
+// Measured off Adafruit's model: within the clip's x span the tallest thing on
+// the +y edge strip reaches board-y 13.45 and stands 0.97 mm proud. Pads
+// centred on the pips (|y| 6.35, 4 mm wide) reached board-y 13.24 and would
+// have landed on it. Moved outboard and narrowed; still inside the support
+// rails, so the clamp path is unchanged.
+clip_pad_ctr  = 6.7;     // pad centreline, from the board's centreline
+clip_pad_w    = 3.5;     // width of the pads that touch the board
 clip_preload  = 0.25;    // pads reach this far below the board top, so the clip
                          // actually grips rather than merely touching
 clip_bump     = 0.7;     // inward bump on each leg
@@ -232,8 +239,12 @@ assert(sens_pip_h < sht_thk,
        "pip must stay below flush so the clip bears on the PCB, not the pip");
 assert(sht_hole_x0 < grip_len, "inboard holes must land on the cradle");
 assert(sht_len > grip_len, "board must cantilever past the cradle into free air");
-assert(hole_y - clip_pad_w / 2 > sht_conn_half,
+assert(clip_pad_ctr - clip_pad_w / 2 > sht_conn_half,
        "clip pads would foul the STEMMA QT connector band");
+assert(clip_pad_ctr + clip_pad_w / 2 < sht_wid / 2,
+       "clip pads would overhang the board edge");
+assert(abs(clip_pad_ctr - hole_y) < support_w / 2,
+       "clip pads must stay over the support rails, or the clamp bends the board");
 assert(clip_groove_h > clip_bump,
        "clip bump is taller than its groove -- it would wedge instead of seating");
 assert(clip_bar_gap > 0,
@@ -320,7 +331,7 @@ module sensor_clip_body() {
                 translate([0, leg_in, leg_bot])
                     cube([clip_w, clip_leg_t, bar_z - leg_bot]);
                 // pad pressing the board, directly over the pip
-                translate([0, hole_y - clip_pad_w / 2, -clip_preload])
+                translate([0, clip_pad_ctr - clip_pad_w / 2, -clip_preload])
                     cube([clip_w, clip_pad_w, bar_z + clip_preload]);
                 // inward bump that seats in the cradle wall's groove
                 translate([0, leg_in - clip_bump, bump_z])
@@ -374,6 +385,21 @@ module sht40_dummy() {
             for (x0 = [0.23, 20.99])
                 translate([x0, sht_wid / 2 - sht_conn_half, sht_thk])
                     cube([4.18, 2 * sht_conn_half, sht_conn_h]);
+            // Surface-mount components, [x0, x1, y0, y1, height], measured off
+            // Adafruit's model. Without these the dummy cannot answer the only
+            // question it is really being asked -- does the clip clear the
+            // board? The 5.14-9.00 x 12.05-13.45 part is the one the pads
+            // originally fouled.
+            for (c = [[ 5.14,  9.00, 12.05, 13.45, 0.97],
+                      [ 6.20,  7.00, 10.20, 10.60, 1.37],
+                      [ 6.20,  9.20,  8.20,  8.60, 1.37],
+                      [ 8.40,  9.20, 10.20, 10.60, 1.37],
+                      [11.80, 13.40,  8.00,  9.60, 0.56],
+                      [16.00, 16.40,  5.00,  7.00, 1.07],
+                      [17.60, 18.00,  5.00,  7.00, 1.07],
+                      [16.00, 19.00, 11.80, 12.20, 0.47]])
+                translate([c[0], c[2], sht_thk])
+                    cube([c[1] - c[0], c[3] - c[2], c[4]]);
         }
         for (hx = [sht_hole_x0, sht_len - sht_hole_x0])
             for (hy = [sht_wid / 2 - sht_hole_dy / 2, sht_wid / 2 + sht_hole_dy / 2])

@@ -1,5 +1,41 @@
 # Build log
 
+## 2026-08-16 — the clip was fouling a surface-mount component
+
+Asked whether the dummy carried the board's SMD parts and whether the clip really cleared
+them. It did not, and it did not.
+
+**The dummy only had the two STEMMA QT connectors.** Everything else on the board was
+missing, so it could never have answered that question — it would have "passed" a fit it was
+blind to.
+
+Mapping the real components off Adafruit's model (by vertices above the PCB; the mesh is not
+watertight, so point-containment and body-splitting both mislead — splitting reports 705
+"bodies") found a part at **x 5.14–9.00, y 12.05–13.45, standing 0.97 mm proud**. The clip's
++y pad reached board-y 13.24 and **would have landed on it**, tilting the clip and stopping
+the far pad from seating.
+
+Fixes:
+
+- Pads moved outboard and narrowed — `clip_pad_ctr` 6.7, `clip_pad_w` 3.5 — placing them in
+  the strip that is genuinely clear (board-y 13.84–17.34, against the component's 13.45).
+  Asserts now hold them inside the connector band, inside the board edge, and over the
+  support rails, so the clamp path is unchanged.
+- **The dummy now carries the eight measured SMD blocks**, so it can actually test clearance.
+
+### The check was blind in a new way
+
+`sht40-clip-grips-board` read 8.9 mm³ against a 3–40 range and passed — with the 0.4 mm³
+collision buried inside a number dominated by the pads' intended preload. Volume alone
+cannot separate "gripping the board" from "resting on a component".
+
+Added `sht40-clip-clears-components`, which restricts the clip/board intersection to **z
+above the board top**, isolating collisions from preload. **Validated against the old
+geometry**: it reads 0.39 mm³ there and 0.0 now.
+
+Also removed two duplicate `sht40-dummy-clears-cradle` entries — an earlier edit's anchor
+matched all three slide-path checks, so the same check had been inserted three times.
+
 ## 2026-08-16 — clip_fit settled at 0.20; variants now self-identifying
 
 Printed all three clips plus the dummy. **The tightest, `clip_fit` = 0.20, slides on snugly
