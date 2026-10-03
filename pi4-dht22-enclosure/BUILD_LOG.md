@@ -1,5 +1,206 @@
 # Build log
 
+## 2026-08-16 — SHT40 arm and clip released
+
+Reprinted the clip with the pads moved clear of the SMD part, and the dummy carrying its
+components. **Fit confirmed** — the board drops onto the pips, the clip slides on and
+clamps, nothing fouls. Judged a shade loose but acceptable; `clip_fit` stays at 0.20 and a
+0.15 variant is exported alongside if it is ever wanted.
+
+Final parts for this build:
+
+| Part | Volume | Notes |
+|---|---|---|
+| `stl/arm.stl` | 7.5 cm³ | tenon, cable groove, passive cradle |
+| `stl/sensor_clip.stl` | 0.66 cm³ | print flat, as exported |
+
+Both single watertight bodies, min z = 0, support-free. Tray, lid and their coupons are
+unchanged from the DHT22 build and do not need reprinting.
+
+Renders: `docs/renders/sht40-arm-final.png`, `sht40-arm-detail.png`.
+
+**Still unproven:** that the cradle matches the real SHT40. The dummy shares the `sht_*`
+parameters with the cradle, so it can only show the joint works, not that the numbers are
+right. They came from Adafruit's own model and all landed on imperial values, so the risk is
+low — but the board goes on the pips before anything else when it arrives.
+
+## 2026-08-16 — the clip was fouling a surface-mount component
+
+Asked whether the dummy carried the board's SMD parts and whether the clip really cleared
+them. It did not, and it did not.
+
+**The dummy only had the two STEMMA QT connectors.** Everything else on the board was
+missing, so it could never have answered that question — it would have "passed" a fit it was
+blind to.
+
+Mapping the real components off Adafruit's model (by vertices above the PCB; the mesh is not
+watertight, so point-containment and body-splitting both mislead — splitting reports 705
+"bodies") found a part at **x 5.14–9.00, y 12.05–13.45, standing 0.97 mm proud**. The clip's
++y pad reached board-y 13.24 and **would have landed on it**, tilting the clip and stopping
+the far pad from seating.
+
+Fixes:
+
+- Pads moved outboard and narrowed — `clip_pad_ctr` 6.7, `clip_pad_w` 3.5 — placing them in
+  the strip that is genuinely clear (board-y 13.84–17.34, against the component's 13.45).
+  Asserts now hold them inside the connector band, inside the board edge, and over the
+  support rails, so the clamp path is unchanged.
+- **The dummy now carries the eight measured SMD blocks**, so it can actually test clearance.
+
+### The check was blind in a new way
+
+`sht40-clip-grips-board` read 8.9 mm³ against a 3–40 range and passed — with the 0.4 mm³
+collision buried inside a number dominated by the pads' intended preload. Volume alone
+cannot separate "gripping the board" from "resting on a component".
+
+Added `sht40-clip-clears-components`, which restricts the clip/board intersection to **z
+above the board top**, isolating collisions from preload. **Validated against the old
+geometry**: it reads 0.39 mm³ there and 0.0 now.
+
+Also removed two duplicate `sht40-dummy-clears-cradle` entries — an earlier edit's anchor
+matched all three slide-path checks, so the same check had been inserted three times.
+
+## 2026-08-16 — clip_fit settled at 0.20; variants now self-identifying
+
+Printed all three clips plus the dummy. **The tightest, `clip_fit` = 0.20, slides on snugly
+without forcing** — set as the production value and `stl/sensor_clip.stl` re-exported.
+
+The trial also exposed a flaw in how it was run: **three clips 0.2 mm apart in span are not
+tellable apart once printed.** Marking them afterwards is guesswork, which nearly wasted the
+print. Added `clip_mark`, cutting that many Ø1.4 x 0.5 mm dimples into the face that ends up
+UP on the bed (the body's +X maps to print +Z), so a variant set is identifiable by touch.
+Verified each dimple removes 0.76 mm³ against a predicted 0.77.
+
+The production clip carries no dimples; `clip_mark` is set only when exporting a sweep.
+
+General lesson for any future parameter sweep here: **if variants differ by less than about
+a millimetre, mark them in the model.** Not on the bed afterwards.
+
+## 2026-08-16 — clip friction trial + printable SHT40 dummy
+
+`clip_fit` (slack over the cradle walls) is the one number geometry cannot settle, so three
+clips are exported to `stl/variants/` at 0.20 / 0.30 / 0.40. Each 0.1 mm widens the U's span
+by 0.2 mm — measured at 27.18 / 27.38 / 27.58 mm, confirming the parameter does what it
+says. All three are single watertight bodies at min z = 0.
+
+Verified the two ends of that range rather than assuming the middle is representative:
+
+| | |
+|---|---|
+| clip @ 0.20, seated on cradle | 0.00 mm³ — the tightest still seats |
+| clip @ 0.20, mid-slide at x=10 | 0.00 mm³ — the tightest still slides |
+| clip @ 0.20, gripping the board | 10.0 mm³ |
+| clip @ 0.40, lifted 1 mm | 1.53 mm³ — the loosest still retains |
+
+Added `sht40_dummy`: a printable stand-in with the correct outline, hole pattern and
+connector blocks, so the joint can be exercised before the sensor arrives. It measures
+25.4 × 17.78 × 4.5 against Adafruit's model at 25.4 × 17.78 × 4.53.
+
+**Its limit is worth stating plainly:** the dummy is built from the same `sht_*` parameters
+as the cradle, so it can confirm the clip slides, grips and clears the connectors — it
+cannot confirm those parameters match the real board. That check only happens when the
+SHT40 lands.
+
+## 2026-08-16 — the clip slides on; it was never going to snap on from above
+
+Second catch off the render, again before printing. The clip was drawn as a top-entry snap,
+but its legs are ~5.6 mm long and 2.2 mm thick, so spreading them the 0.4 mm needed to clear
+the walls takes **about 12 kg**. They would break before they spread — the same lesson as
+the cradle barb and the socket tabs, this time reached by arithmetic instead of by breaking
+a print.
+
+So it is now an explicit **slide-on**, which suits the design better anyway: the wall grooves
+were already full-length rails, so the joint needs **no flex at all**. The clip enters at the
+walls' open outboard end and slides inboard until it butts the groove's closed end. The
+groove now starts at `clip_x`, so the stop and the clip's seated position are derived from
+one number and cannot disagree. A lead-in chamfer on each rail finds the groove mouth.
+
+Retention is now: rails in grooves hold it down and sideways, the stop halts insertion, and
+friction from the pads' 0.25 mm preload resists sliding back out. If that proves too free in
+plastic, a light taper on the groove is the fix — and the clip is 0.7 cm³ to reprint.
+
+**New check class: the slide path.** A clear seated position is not sufficient for a part
+that arrives by sliding, so `sht40-clip-slide-path-*` verifies clearance at three points
+along the travel, not just at the end of it. That is the same blind spot as checking a
+seated lid without checking it can enter the groove.
+
+## 2026-08-16 — clip could not seat: bar landed on the cradle walls
+
+Caught by eye off the render, before printing. The clip's bar underside was derived from the
+CONNECTOR height (`sht_conn_h + 0.8` = 3.7 mm above the board top) while the cradle walls
+rise `wall_up` = 4.5 mm. **The bar landed on the wall tops 0.8 mm before the pads reached
+the board** — the clip could not seat at all.
+
+`clip_bar_gap` now derives the bar from `wall_up`, and an assert fails the render if it is
+not positive.
+
+### The check hid it, for the third time
+
+`sht40-clip-engages-cradle` **read 14.2 mm³ and passed a 0.5–60 range — and that 14.2 was
+the collision.** Same failure as the socket detent (60 mm³ tolerance, 28.9 mm³ reading, joint
+physically impossible) and the lid snap (60 mm³ tolerance, 3.4 mm³ reading, ridge wedged on
+the flanks). Three for three: **a tolerance widened to accommodate an intended interference
+is wide enough to hide an unintended one.**
+
+Replaced with the pair that has worked everywhere else:
+
+- `sht40-clip-seated-on-cradle` (tol 1.0, reads 0.0) — seated, the clip touches the cradle
+  almost nowhere; its bumps sit inside the grooves with clearance
+- `sht40-clip-retains-when-lifted` (reads 2.0 mm³) — lift it and the bumps run into the
+  groove's top edge
+
+Retention is modest by design: the pads' 0.25 mm preload pushes the clip up until the bumps
+bear on the groove edges. `clip_bump` is the knob, and the clip is 0.7 cm³ to reprint.
+
+## 2026-08-16 — arm redesigned for the Adafruit SHT40 (4885)
+
+Dimensions come from **Adafruit's own 3D model**, not a drawing or a photo:
+`Adafruit_CAD_Parts/"4885 SHT40 Sensor"`. Vendored to `docs/reference/` so the fit checks
+run against the manufacturer's actual geometry. It is the standard 1.0 × 0.7 inch STEMMA QT
+outline, so every figure lands on an imperial value:
+
+| | |
+|---|---|
+| Board | 25.4 × 17.78 mm, PCB 1.6 mm |
+| Mounting holes | **four**, Ø2.5, inset 2.54 from each edge → 20.32 × 12.70 pattern |
+| STEMMA QT | both short ends, central band y ±2.97 only, 2.9 mm above the PCB |
+
+Two properties of this board drove the design:
+
+- **Four holes means rotation is already solved.** The pair at one end, 12.70 mm apart,
+  fixes the angle by itself, so the DHT22's anti-rotation rails are gone.
+- **The outer ~4 mm of each long edge is clear end to end**, because the connectors sit in
+  the central band. The cradle supports and clamps those strips while the connectors and
+  the sensor breathe through an open central channel.
+
+### Retention: a separate clip, which is the important change
+
+The cradle is now **entirely passive** — pips locate, rails support, nothing flexes. All
+retention lives in a **separate clip**. Two reasons, and the second is the one that matters:
+
+1. It is a few minutes to reprint, so tuning it is cheap.
+2. **A separate part can be printed in its own orientation.** The clip is a flat U, printed
+   lying down, so its legs flex *within* the layer plane. Every sprung feature that failed
+   on the DHT22 build failed because it was printed standing in Z and bent across its layer
+   lines. This one cannot.
+
+The clip sits **outboard of the inboard connector** rather than over the pips. Clamping over
+the pips is marginally better mechanically, but it buries the STEMMA QT socket under the
+clip's bar with 0.8 mm of headroom — the cable could then only be fitted before the clip.
+The support rails run the full grip length, so the clamp path is still clip → board → rail.
+Caught by looking at the render with the real board in place, and now held by a check.
+
+### Checks, against the manufacturer's model
+
+- `sht40-board-clears-cradle` — 0.0 mm³; the board drops on without fouling
+- `sht40-clip-grips-board` — 8.9 mm³; the clip actually grips rather than merely touching
+- `sht40-clip-clears-connectors` — 0.0 mm³; neither connector is buried
+- `sht40-clip-engages-cradle` — 14.2 mm³; the bumps seat in the wall grooves
+
+Parts: `arm` 7.5 cm³ (was 7.0), `sensor_gauge` 2.0 cm³, `sensor_clip` 0.6 cm³. The tray, lid
+and their coupons are untouched — the cradle end really was the only sensor-specific
+geometry in the model.
+
 ## 2026-08-16 — the DHT22 build works; baseline complete
 
 Reprinted tray and lid with the derived groove and the taller ridge. **The lid snaps, and

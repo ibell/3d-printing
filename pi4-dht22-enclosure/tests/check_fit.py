@@ -22,6 +22,13 @@ import trimesh
 
 ROOT = Path(__file__).resolve().parent.parent
 SCAD = ROOT / "pi4_dht22_enclosure.scad"
+# Adafruit's own model of the SHT40 breakout, vendored in docs/reference. Used
+# as ground truth for the cradle and clip so those are checked against the
+# manufacturer's geometry rather than numbers retyped from a drawing.
+SHT40 = ROOT / "docs" / "reference" / "adafruit-4885-sht40.stl"
+BOARD = f'translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) import("{SHT40}")'
+CLIP  = ('translate([clip_x, 0, cradle_gauge_t + btop_rel]) '
+         'sensor_clip_body()')
 
 # Solid pairs that must NOT overlap, expressed as an OpenSCAD intersection()
 # in assembled coordinates. Tolerance is in mm^3.
@@ -90,6 +97,114 @@ PAIRS = [
         0.5,
     ),
     (
+        # The SHT40 must drop onto the cradle without fouling it: pips are
+        # 0.2 mm under the mounting holes, and the walls clear the board edges.
+        # Checked against Adafruit's own model of the board.
+        "sht40-board-clears-cradle",
+        f"""
+        intersection() {{ sensor_gauge(); {BOARD}; }}
+        """,
+        2.0,
+    ),
+    (
+        # A SEATED clip must touch the cradle almost nowhere -- its bumps sit
+        # inside the grooves with clearance and its legs clear the walls by
+        # clip_fit. This read 14.2 mm^3 in the first version and PASSED a
+        # 0.5-60 range: that number was the clip's bar resting on the wall tops,
+        # 0.8 mm before its pads reached the board. Third time a tolerance
+        # widened for an intended interference hid an unintended one, so this is
+        # now a no-overlap check paired with a lifted-retention check below.
+        "sht40-clip-seated-on-cradle",
+        f"""
+        intersection() {{ {CLIP}; sensor_gauge(); }}
+        """,
+        1.0,
+    ),
+    (
+        # The printable stand-in must fit the cradle exactly as the real board
+        # does -- it is the only way to exercise the joint before the SHT40
+        # arrives. Note it shares the sht_* parameters with the cradle, so it
+        # cannot tell you whether those parameters are RIGHT.
+        "sht40-dummy-clears-cradle",
+        """
+        intersection() {
+            sensor_gauge();
+            translate([0, -sht_wid/2, cradle_gauge_t + board_lift]) sht40_dummy();
+        }
+        """,
+        1.0,
+    ),
+    (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x8p0",
+        f"""
+        intersection() {{
+            translate([8.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x10p0",
+        f"""
+        intersection() {{
+            translate([10.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
+        # Slide path: the clip goes on axially, so a clear SEATED position is
+        # not enough -- it has to be clear at every point along the travel too.
+        "sht40-clip-slide-path-x12p0",
+        f"""
+        intersection() {{
+            translate([12.0, 0, cradle_gauge_t + btop_rel]) sensor_clip_body();
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+    ),
+    (
+        # THE check for this joint: the clip must not touch anything standing
+        # proud of the PCB. Restricting the intersection to z above the board
+        # top isolates component collisions from the pads' intended preload,
+        # which is what "clip grips board" alone could not distinguish -- it
+        # read 8.9 mm^3 with a 0.4 mm^3 collision buried inside it, and passed.
+        "sht40-clip-clears-components",
+        f"""
+        bt = cradle_gauge_t + board_lift + sht_thk;
+        intersection() {{
+            {CLIP};
+            {BOARD};
+            translate([-10, -25, bt + 0.05]) cube([60, 50, 25]);
+        }}
+        """,
+        0.3,
+    ),
+    (
+        # The clip must not sit over either STEMMA QT connector, or the cable
+        # could only be fitted before the clip. Connectors occupy the central
+        # band on both short ends, standing sht_conn_h above the PCB.
+        "sht40-clip-clears-connectors",
+        f"""
+        bt = cradle_gauge_t + btop_rel;
+        intersection() {{
+            {CLIP};
+            union() {{
+                translate([0.23, -sht_conn_half, bt]) cube([4.18, 2*sht_conn_half, sht_conn_h]);
+                translate([20.99, -sht_conn_half, bt]) cube([4.18, 2*sht_conn_half, sht_conn_h]);
+            }}
+        }}
+        """,
+        0.5,
+    ),
+    (
         # The lid pads must NOT be resting on the locating pips -- if their
         # clearance bores were too shallow or too narrow the pads would bear on
         # the pip tips instead of the PCB, and the Pi would never be clamped.
@@ -122,6 +237,32 @@ CLAMPS = [
         """,
         5.0,
         400.0,
+    ),
+    (
+        # The clip must actually grip the board -- pads reach clip_preload below
+        # the board top. If this were 0 the clip would merely rest on it. If it
+        # were large, the clip would be fouling the STEMMA QT connectors, which
+        # is the other way this can go wrong.
+        "sht40-clip-grips-board",
+        f"""
+        intersection() {{ {CLIP}; {BOARD}; }}
+        """,
+        3.0,
+        40.0,
+    ),
+    (
+        # Retention: seated, the bump sits inside its groove and touches
+        # nothing. Lift the clip and the bump must run into the groove's top
+        # edge. Zero here would mean the clip simply lifts off.
+        "sht40-clip-retains-when-lifted",
+        f"""
+        intersection() {{
+            translate([0, 0, 1.0]) {{ {CLIP}; }}
+            sensor_gauge();
+        }}
+        """,
+        1.0,
+        60.0,
     ),
     (
         # pads pressing the Pi down onto the standoffs: four annular contacts,
