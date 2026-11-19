@@ -15,6 +15,7 @@ scaling an STL.
 | [pi4-dht22-enclosure](pi4-dht22-enclosure/) | A Raspberry Pi 4 desk enclosure with a snap-fit lid and a plug-in arm that holds a DHT22 temp/humidity module in free air, off the Pi's heat. Parametric, prints flat, no supports. |
 | [alfred-camera-mount](alfred-camera-mount/) | A one-piece frame that remounts an Alfred security camera on its own USB-A power plug, looking straight out from the wall. Prints face down, no supports. |
 | [transfer-punch](transfer-punch/) | A short 5/8" transfer punch for a shallow hole: 3/16" body, stop lip, marking point. Prints body down, no supports. |
+| [bell-photo-ornament](bell-photo-ornament/) | A three-sided Christmas bell ornament with a recessed panel on each side for a photo, plus a cut-to-size photo template. Prints mouth down, no supports. |
 
 ## License
 
